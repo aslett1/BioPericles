@@ -1,0 +1,11 @@
+name,Sample,LEVEL1,1,2,3,4,5,LEVEL6,7,8,9,10,Year,Continent,Region_within_continent,Country
+seq1,seq1,1,1,1,1,1,2,2,2,2,2,2,2000,World,South_World,S.World
+seq2,seq2,1,1,1,1,1,3,4,4,4,4,4,2000,Unknown,Unknown,Unknown
+seq3,seq3,2,1,1,1,1,2,2,2,2,2,2,2000,World,South_World,S.World
+seq4,seq4,2,1,1,1,1,1,1,1,1,1,1,2000,World,North_World,Algeria
+seq5,seq5,2,1,1,1,1,2,3,3,3,3,3,2000,World,Central_World,Angola
+seq6,seq5,3,1,1,1,1,2,3,3,3,3,3,2000,World,Central_World,Angola
+seq7,seq5,3,1,1,1,1,2,3,3,3,3,3,2000,World,Central_World,Angola
+seq8,seq5,3,1,1,1,1,2,3,3,3,3,3,2000,World,Central_World,Angola
+seq9,seq5,4,1,1,1,1,2,3,3,3,3,3,2000,World,Central_World,Angola
+seq10,seq5,4,1,1,1,1,2,3,3,3,3,3,2000,World,Central_World,Angola
