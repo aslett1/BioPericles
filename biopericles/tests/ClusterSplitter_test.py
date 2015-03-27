@@ -95,3 +95,17 @@ class TestClusterSplitter(unittest.TestCase):
     directory = '~/another_directory'
     output_directory = splitter.absolute_directory_path(directory)
     self.assertEqual(output_directory, '/home/another_directory')
+
+  def test_get_clusters(self):
+    splitter = self.uninitialised_splitter()
+
+    sample_to_cluster_map = {
+      'seq_2': 'cluster_B',
+      'seq_3': 'cluster_B',
+      'seq_1': 'cluster_A',
+      'seq_4': 'cluster_C'
+    }
+
+    cluster_list = splitter.get_clusters(sample_to_cluster_map)
+
+    self.assertEqual(cluster_list, ['cluster_A', 'cluster_B', 'cluster_C'])

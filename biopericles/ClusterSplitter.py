@@ -12,5 +12,9 @@ class ClusterSplitter(object):
   def absolute_directory_path(self, path):
     if not os.path.isdir(path):
       raise NotDirectoryException("output_directory '%s' is not a directory" % path)
-    directory_name = os.path.normpath(path)
+    directory_name = os.path.normpath(path) # removes rogue '/' from path
     return os.path.abspath(directory_name)
+
+  def get_clusters(self, sequence_to_cluster_map):
+    clusters = sequence_to_cluster_map.values()
+    return sorted(list(set(clusters)))
