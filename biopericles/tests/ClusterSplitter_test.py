@@ -1,7 +1,9 @@
+import os
 import unittest
 from mock import patch
 
 from biopericles.ClusterSplitter import ClusterSplitter
+from biopericles.ClusterSplitter import NotDirectoryException
 
 class TestClusterSplitter(unittest.TestCase):
 
@@ -14,16 +16,82 @@ class TestClusterSplitter(unittest.TestCase):
     else:
       return path
 
-  @patch('biopericles.ClusterSplitter.os.path.abspath')
-  def test_create_default_output_directory(self, abspath_mock):
+  def fake_dirname(self, path):
+    lookup = {
+               '/home/another_directory': '/home',
+               '/home/another_directory/': '/home/another_directory',
+               '/home/child_dir': '/home',
+               '/home/child_dir/': '/home/child_dir',
+               '/home/child_dir/file.aln': '/home/child_dir',
+               '/parent_dir/child_dir': '/parent_dir',
+               '/parent_dir/child_dir/': '/parent_dir/child_dir',
+               '/parent_dir/child_dir/file.aln': '/parent_dir/child_dir',
+               '~/another_directory': '~',
+               '~/another_directory/': '~/another_directory',
+               '~/child_dir': '~',
+               '~/child_dir/': '~/child_dir',
+               '~/child_dir/file.aln': '~/child_dir'
+             }
+    return lookup[path]
 
-    abspath_mock.side_effect = self.fake_abspath
-    splitter = self.uninitialised_splitter()
+  def fake_normpath(self, path):
+    lookup = {
+               '/home/another_directory': '/home/another_directory',
+               '/home/another_directory/': '/home/another_directory',
+               '/home/child_dir': '/home/child_dir',
+               '/home/child_dir/': '/home/child_dir',
+               '/home/child_dir/file.aln': '/home/child_dir/file.aln',
+               '/parent_dir/child_dir': '/parent_dir/child_dir',
+               '/parent_dir/child_dir/': '/parent_dir/child_dir',
+               '/parent_dir/child_dir/file.aln': '/parent_dir/child_dir/file.aln',
+               '~/another_directory': '~/another_directory',
+               '~/another_directory/': '~/another_directory',
+               '~/child_dir': '~/child_dir',
+               '~/child_dir/': '~/child_dir',
+               '~/child_dir/file.aln': '~/child_dir/file.aln'
+             }
+    return lookup[path]
+
+  @patch('biopericles.ClusterSplitter.ClusterSplitter.absolute_directory_path')
+  @patch('biopericles.ClusterSplitter.os.getcwd')
+  def test_init_output_directory(self, cwd_mock, directory_path_mock):
+    cwd_mock.return_value = '/parent_dir/child_dir'
 
     multifasta = '/parent_dir/child_dir/file.aln'
-    output_directory = splitter.create_default_output_directory(multifasta)
-    self.assertEqual(output_directory, '/parent_dir/child_dir')
+    sequence_to_cluster_map = {}
+
+    directory_path_mock.return_value = '/parent_dir/child_dir'
+    splitter = ClusterSplitter(multifasta, sequence_to_cluster_map)
+    self.assertEqual(splitter.output_directory, '/parent_dir/child_dir')
+
+    directory_path_mock.return_value = '/home/another_directory'
+    splitter = ClusterSplitter(multifasta, sequence_to_cluster_map, '~/another_directory/')
+    self.assertEqual(splitter.output_directory, '/home/another_directory')
+
+
+  @patch('biopericles.ClusterSplitter.os.path')
+  def test_absolute_directory_path(self, path_mock):
+
+    path_mock.abspath.side_effect = self.fake_abspath
+    path_mock.dirname.side_effect = self.fake_dirname
+    path_mock.normpath.side_effect = self.fake_normpath
+    path_mock.sep.return_value = '/'
+    splitter = self.uninitialised_splitter()
+
+    path_mock.isdir.return_value = False
+
+    multifasta = '/parent_dir/child_dir/file.aln'
+    self.assertRaises(NotDirectoryException, splitter.absolute_directory_path, multifasta)
 
     multifasta = '~/child_dir/file.aln'
-    output_directory = splitter.create_default_output_directory(multifasta)
-    self.assertEqual(output_directory, '/home/child_dir')
+    self.assertRaises(NotDirectoryException, splitter.absolute_directory_path, multifasta)
+
+    path_mock.isdir.return_value = True
+
+    directory = '~/another_directory/'
+    output_directory = splitter.absolute_directory_path(directory)
+    self.assertEqual(output_directory, '/home/another_directory')
+
+    directory = '~/another_directory'
+    output_directory = splitter.absolute_directory_path(directory)
+    self.assertEqual(output_directory, '/home/another_directory')

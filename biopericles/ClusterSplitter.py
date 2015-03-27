@@ -1,6 +1,16 @@
 import os
 
-class ClusterSplitter(object):
+class NotDirectoryException(ValueError):
+  pass
 
-  def create_default_output_directory(self, multifasta):
-    return os.path.dirname(os.path.abspath(multifasta))
+class ClusterSplitter(object):
+  def __init__(self, multifasta, sequence_to_cluster_map, output_directory=None):
+    if output_directory == None:
+      output_directory = os.getcwd()
+    self.output_directory = self.absolute_directory_path(output_directory)
+
+  def absolute_directory_path(self, path):
+    if not os.path.isdir(path):
+      raise NotDirectoryException("output_directory '%s' is not a directory" % path)
+    directory_name = os.path.normpath(path)
+    return os.path.abspath(directory_name)
