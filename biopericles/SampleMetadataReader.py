@@ -12,8 +12,15 @@ class SampleMetadataReader(object):
   def config_file_exists(self, filename):
     return os.path.isfile(filename)
 
-  def parse_line(self, line_data, sample_name_idx, cluster_name_idx):
-    return (line_data[sample_name_idx], line_data[cluster_name_idx])
+  def parse(self, metadata_file):
+    csv_reader = csv.reader(metadata_file, delimiter=',')
+    header = csv_reader.next()
+    sample_cluster_tuples = map(self.parse_line, csv_reader)
+    self.cluster_sample_map = self.create_cluster_sample_map(sample_cluster_tuples)
+    self.sample_cluster_map = self.create_sample_cluster_map(sample_cluster_tuples)
+
+  def parse_line(self, line_data):
+    return (line_data[self.sample_name_idx], line_data[self.cluster_name_idx])
 
   def create_cluster_sample_map(self, sample_cluster_tuples):
     cluster_sample_map = {}

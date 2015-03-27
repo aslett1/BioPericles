@@ -61,3 +61,37 @@ class TestSampleMetadataReader(unittest.TestCase):
 
     sample_cluster_tuples = [('seq_1', 'cluster_A'), ('seq_1', 'cluster_B')]
     self.assertRaises(BadMetadataException, reader.create_sample_cluster_map, sample_cluster_tuples)
+
+  def test_parse_metadata_file(self):
+    reader = self.uninitialised_reader()
+    reader.sample_name_idx = 0
+    reader.cluster_name_idx = 1
+
+    fake_file_contents = """\
+Sample,Cluster,Year
+seq_1,cluster_A,2011
+seq_1,cluster_A,2012
+seq_2,cluster_B,2013
+seq_3,cluster_B,2014
+seq_4,cluster_C,2010
+"""
+    fake_file = StringIO(fake_file_contents)
+
+    reader.parse(fake_file)
+
+    expected_cluster_sample_map = {
+                        'cluster_A': ['seq_1'],
+                        'cluster_B': ['seq_2', 'seq_3'],
+                        'cluster_C': ['seq_4']
+                      }
+
+    self.assertEqual(reader.cluster_sample_map, expected_cluster_sample_map)
+
+    expected_sample_cluster_map = {
+                        'seq_1': 'cluster_A',
+                        'seq_2': 'cluster_B',
+                        'seq_3': 'cluster_B',
+                        'seq_4': 'cluster_C'
+                      }
+
+    self.assertEqual(reader.sample_cluster_map, expected_sample_cluster_map)
