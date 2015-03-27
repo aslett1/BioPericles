@@ -1,13 +1,20 @@
 import os
+import csv
 
 class BadMetadataException(ValueError):
   pass
 
 class SampleMetadataReader(object):
 
-  def __init__(self, filename):
-    if not self.config_file_exists(filename):
-      raise ValueError("Could not find filename '%s'" % filename)
+  def __init__(self, metadata_filename, sample_name_idx, cluster_name_idx):
+    self.cluster_sample_map = None
+    self.sample_cluster_map = None
+    if not self.config_file_exists(metadata_filename):
+      raise ValueError("Could not find filename '%s'" % metadata_filename)
+    self.sample_name_idx = sample_name_idx
+    self.cluster_name_idx = cluster_name_idx
+    with open(metadata_filename, 'r') as metadata_file:
+      self.parse(metadata_file)
 
   def config_file_exists(self, filename):
     return os.path.isfile(filename)
