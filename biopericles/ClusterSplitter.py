@@ -5,9 +5,15 @@ class NotDirectoryException(ValueError):
 
 class ClusterSplitter(object):
   def __init__(self, multifasta, sequence_to_cluster_map, output_directory=None):
+    self.cluster_output_files = {}
+
     if output_directory == None:
       output_directory = os.getcwd()
     self.output_directory = self.absolute_directory_path(output_directory)
+
+  def __del__(self):
+    for output_file in self.cluster_output_files.values():
+      output_file.close()
 
   def absolute_directory_path(self, path):
     if not os.path.isdir(path):
