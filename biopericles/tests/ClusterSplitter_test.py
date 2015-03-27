@@ -1,6 +1,7 @@
 import os
 import unittest
 from mock import patch
+from StringIO import StringIO
 
 from biopericles.ClusterSplitter import ClusterSplitter
 from biopericles.ClusterSplitter import NotDirectoryException
@@ -95,6 +96,31 @@ class TestClusterSplitter(unittest.TestCase):
     directory = '~/another_directory'
     output_directory = splitter.absolute_directory_path(directory)
     self.assertEqual(output_directory, '/home/another_directory')
+
+  @patch('biopericles.ClusterSplitter.open', create=True)
+  def test_create_cluster_output_files(self, open_mock):
+
+    splitter = self.uninitialised_splitter()
+    splitter.output_directory = '/home/output'
+
+    a_file = StringIO('A file')
+    open_mock.return_value = a_file
+
+    clusters = ['cluster_A', 'cluster_B', 'cluster_C']
+    splitter.create_cluster_output_files(clusters)
+
+    self.assertItemsEqual(splitter.cluster_output_files.keys(), ['cluster_A', 'cluster_B', 'cluster_C'])
+    for cluster, file_handler in splitter.cluster_output_files.items():
+      self.assertEqual(file_handler, a_file, "File handler for %s isn't a file handler" % cluster)
+
+    open_mock.assert_any_call('/home/output/cluster_cluster_A_multifasta.aln', 'w')
+    open_mock.assert_any_call('/home/output/cluster_cluster_B_multifasta.aln', 'w')
+    open_mock.assert_any_call('/home/output/cluster_cluster_C_multifasta.aln', 'w')
+
+    splitter.cluster_output_files = {}
+
+    open_mock.side_effect = IOError("Problem")
+    self.assertRaises(IOError, splitter.create_cluster_output_files, clusters)
 
   def test_get_clusters(self):
     splitter = self.uninitialised_splitter()

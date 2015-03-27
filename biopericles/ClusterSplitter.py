@@ -18,3 +18,14 @@ class ClusterSplitter(object):
   def get_clusters(self, sequence_to_cluster_map):
     clusters = sequence_to_cluster_map.values()
     return sorted(list(set(clusters)))
+
+  def create_cluster_output_files(self, clusters):
+    def create_file(cluster):
+      filename = "cluster_{cluster}_multifasta.aln".format(cluster=cluster)
+      path = os.path.join(self.output_directory, filename)
+      return open(path, 'w')
+    try:
+      self.cluster_output_files = { cluster: create_file(cluster) for cluster in clusters }
+    except IOError as e:
+      self.output_files = {}
+      raise IOError("Could not open output file to write cluster.  Exception was:\n%s" % e)
