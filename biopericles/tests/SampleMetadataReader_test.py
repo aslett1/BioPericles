@@ -1,28 +1,33 @@
 import unittest
-from mock import patch
+from mock import patch, MagicMock
+from StringIO import StringIO
 
 from biopericles.SampleMetadataReader import SampleMetadataReader, BadMetadataException
 
 class TestSampleMetadataReader(unittest.TestCase):
+
+  def uninitialised_reader(self):
+    # In most of the tests, we don't want to test the __init__ method
+    return SampleMetadataReader.__new__(SampleMetadataReader)
 
   @patch('biopericles.SampleMetadataReader.os')
   def test_initialise_file_not_exist(self, os_mock):
     os_mock.path.isfile.return_value = False
     self.assertRaises(ValueError, SampleMetadataReader, '/not-real')
 
-  @patch('biopericles.SampleMetadataReader.os')
-  def test_parse_line(self, os_mock):
-    os_mock.path.isfile.return_value = True
-    reader = SampleMetadataReader('')
+  def test_parse_line(self):
+    reader = self.uninitialised_reader()
+    reader.sample_name_idx = 1
+    reader.cluster_name_idx = 0
+
     line = ['clusterA', 'sequence1', 'something else']
-    self.assertEqual(reader.parse_line(line, 1, 0), ('sequence1', 'clusterA'))
+    self.assertEqual(reader.parse_line(line), ('sequence1', 'clusterA'))
 
-    self.assertRaises(IndexError, reader.parse_line, line, 10, 0)
+    reader.sample_name_idx = 10
+    self.assertRaises(IndexError, reader.parse_line, line)
 
-  @patch('biopericles.SampleMetadataReader.os')
-  def test_create_cluster_sample_map(self, os_mock):
-    os_mock.path.isfile.return_value = True
-    reader = SampleMetadataReader('')
+  def test_create_cluster_sample_map(self):
+    reader = self.uninitialised_reader()
 
     output = reader.create_cluster_sample_map([ ('seq_1', 'cluster_A'),
                                                 ('seq_1', 'cluster_A'),
@@ -37,10 +42,8 @@ class TestSampleMetadataReader(unittest.TestCase):
 
     self.assertEqual(output, expected_output)
 
-  @patch('biopericles.SampleMetadataReader.os')
-  def test_create_sample_cluster_map(self, os_mock):
-    os_mock.path.isfile.return_value = True
-    reader = SampleMetadataReader('')
+  def test_create_sample_cluster_map(self):
+    reader = self.uninitialised_reader()
 
     output = reader.create_sample_cluster_map([ ('seq_1', 'cluster_A'),
                                                 ('seq_1', 'cluster_A'),
