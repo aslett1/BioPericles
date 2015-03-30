@@ -4,7 +4,8 @@ from mock import patch, MagicMock
 from StringIO import StringIO
 
 from biopericles.ClusterSplitter import ClusterSplitter
-from biopericles.ClusterSplitter import NotFileException, NotDirectoryException
+from biopericles.ClusterSplitter import NotFileException, NotDirectoryException, \
+                                        OutputFileAlreadyExistsException
 
 class TestClusterSplitter(unittest.TestCase):
 
@@ -127,14 +128,18 @@ class TestClusterSplitter(unittest.TestCase):
     output_directory = splitter.absolute_directory_path(directory)
     self.assertEqual(output_directory, '/home/another_directory')
 
+  @patch('biopericles.ClusterSplitter.os.path')
   @patch('biopericles.ClusterSplitter.open', create=True)
-  def test_create_cluster_output_files(self, open_mock):
+  def test_create_cluster_output_files(self, open_mock, path_mock):
 
     splitter = self.uninitialised_splitter()
     splitter.output_directory = '/home/output'
 
     a_file = StringIO('A file')
     open_mock.return_value = a_file
+
+    path_mock.isfile.return_value = False
+    path_mock.join.side_effect = lambda *paths: "/".join(paths)
 
     clusters = ['cluster_A', 'cluster_B', 'cluster_C']
     splitter.create_cluster_output_files(clusters)
@@ -151,6 +156,22 @@ class TestClusterSplitter(unittest.TestCase):
 
     open_mock.side_effect = IOError("Problem")
     self.assertRaises(IOError, splitter.create_cluster_output_files, clusters)
+
+  @patch('biopericles.ClusterSplitter.os.path')
+  @patch('biopericles.ClusterSplitter.open', create=True)
+  def test_create_cluster_output_files_already_exists(self, open_mock, path_mock):
+
+    splitter = self.uninitialised_splitter()
+    splitter.output_directory = '/home/output'
+
+    path_mock.isfile.return_value = True
+    path_mock.join.side_effect = lambda *paths: "/".join(paths)
+
+    clusters = ['cluster_A']
+    self.assertRaises(OutputFileAlreadyExistsException,
+                      splitter.create_cluster_output_files, clusters)
+
+    self.assertEqual(open_mock.call_count, 0)
 
   def test_get_clusters(self):
     splitter = self.uninitialised_splitter()

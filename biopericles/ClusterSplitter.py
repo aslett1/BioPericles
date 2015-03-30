@@ -9,6 +9,9 @@ class NotDirectoryException(ValueError):
 class NotFileException(ValueError):
   pass
 
+class OutputFileAlreadyExistsException(ValueError):
+  pass
+
 class ClusterSplitter(object):
   def __init__(self, multifasta, sequence_to_cluster_map, output_directory=None):
     clusters = self.get_clusters(sequence_to_cluster_map)
@@ -48,6 +51,9 @@ class ClusterSplitter(object):
     def create_file(cluster):
       filename = "cluster_{cluster}_multifasta.aln".format(cluster=cluster)
       path = os.path.join(self.output_directory, filename)
+      if os.path.isfile(path):
+        message = "The output file '%s' already exists.  Please specify another output directory" % path
+        raise OutputFileAlreadyExistsException(message)
       return open(path, 'w')
     try:
       self.cluster_output_files = { cluster: create_file(cluster) for cluster in clusters }
