@@ -11,10 +11,6 @@ class ClusterSplitter(object):
       output_directory = os.getcwd()
     self.output_directory = self.absolute_directory_path(output_directory)
 
-  def __del__(self):
-    for output_file in self.cluster_output_files.values():
-      output_file.close()
-
   def absolute_directory_path(self, path):
     if not os.path.isdir(path):
       raise NotDirectoryException("output_directory '%s' is not a directory" % path)
