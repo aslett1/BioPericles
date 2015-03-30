@@ -1,0 +1,47 @@
+#!/usr/bin/env python
+
+import argparse
+import sys
+
+from argparse import FileType, ArgumentError
+
+from biopericles.ClusterSplitter import ClusterSplitter
+from biopericles.SampleMetadataReader import SampleMetadataReader
+
+def stderr(text):
+  print >> sys.stderr, text
+
+if __name__ == '__main__':
+  parser = argparse.ArgumentParser()
+  parser.description = "Splits a multifasta into clusters using a CSV metadata file"
+  parser.add_argument('metadata', type=FileType(mode='r'),
+                      help="CSV formatted metadata linking samples to clusters")
+  sample_arg = parser.add_argument('--sequence-column', '-s', dest="sample_idx",
+                      type=int, default=1,
+                      help="Metadata column for sequence name (default: 1)")
+  cluster_arg = parser.add_argument('--cluster-column', '-c', dest="cluster_idx",
+                      type=int, default=3,
+                      help="Metadata column for cluster name (default: 3)")
+  parser.add_argument('multifasta', type=FileType(mode='r'),
+                      help="Multifasta formatted file with sequence data")
+  parser.add_argument('--output-directory', '-o', dest="output_dir", type=str,
+                      help="Output directory for clusters (default: current directory)")
+  parser.epilog = "NB column numbering starts from 1"
+
+  args = parser.parse_args()
+
+  if args.sample_idx <= 0:
+    raise ArgumentError(sample_arg, "Columns are numbered from 1")
+  if args.cluster_idx <= 0:
+    raise ArgumentError(cluster_arg, "Columns are numbered from 1")
+
+  metadata_filename = args.metadata.name
+  metadata = SampleMetadataReader(metadata_filename,
+                                  args.sample_idx - 1,
+                                  args.cluster_idx - 1)
+
+  multifasta_filename = args.multifasta.name
+  splitter = ClusterSplitter(multifasta_filename,
+                             metadata.sample_cluster_map,
+                             args.output_dir)
+  splitter.write_all_sequences()

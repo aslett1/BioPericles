@@ -1,4 +1,4 @@
-import Bio
+import Bio.SeqIO
 import os
 
 from collections import Counter

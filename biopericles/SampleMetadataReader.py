@@ -11,6 +11,7 @@ class SampleMetadataReader(object):
     self.sample_cluster_map = None
     if not self.config_file_exists(metadata_filename):
       raise ValueError("Could not find filename '%s'" % metadata_filename)
+    # NB these columns are 0-indexed
     self.sample_name_idx = sample_name_idx
     self.cluster_name_idx = cluster_name_idx
     with open(metadata_filename, 'r') as metadata_file:
