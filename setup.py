@@ -13,7 +13,7 @@ setup(name='biopericles',
       url='https://github.com/sanger-pathogens/BioPericles',
       author='Ben Taylor, Andrew J. Page',
       author_email='ben.taylor@sanger.ac.uk, ap13@sanger.ac.uk',
-      scripts=[],
+      scripts=['scripts/cluster-sequences'],
       include_package_data=True,
       install_requires=[
       ],
