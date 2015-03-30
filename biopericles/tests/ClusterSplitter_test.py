@@ -53,6 +53,31 @@ class TestClusterSplitter(unittest.TestCase):
 
 
   @patch('biopericles.ClusterSplitter.os.path')
+  def test_absolute_multifasta_path(self, path_mock):
+
+    path_mock.abspath.side_effect = self.fake_abspath
+    path_mock.normpath.side_effect = self.fake_normpath
+    path_mock.sep.return_value = '/'
+    splitter = self.uninitialised_splitter()
+
+    path_mock.isdir.return_value = False
+
+    multifasta_input_path = '/parent_dir/child_dir/file.aln'
+    self.assertEqual(splitter.absolute_multifasta_path(multifasta_input_path), '/parent_dir/child_dir/file.aln')
+
+    multifasta_input_path = '~/child_dir/file.aln'
+    self.assertEqual(splitter.absolute_multifasta_path(multifasta_input_path), '/home/child_dir/file.aln')
+
+    path_mock.isdir.return_value = True
+
+    directory = '~/another_directory/'
+    self.assertRaises(NotDirectoryException, splitter.absolute_directory_path, )
+
+    directory = '~/another_directory'
+    output_directory = splitter.absolute_directory_path(directory)
+    self.assertEqual(output_directory, '/home/another_directory')
+
+  @patch('biopericles.ClusterSplitter.os.path')
   def test_absolute_directory_path(self, path_mock):
 
     path_mock.abspath.side_effect = self.fake_abspath
