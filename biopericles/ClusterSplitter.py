@@ -21,6 +21,10 @@ class ClusterSplitter(object):
     clusters = sequence_to_cluster_map.values()
     return sorted(list(set(clusters)))
 
+  def get_sequences(self, sequence_to_cluster_map):
+    sequences = sequence_to_cluster_map.keys()
+    return sorted(list(set(sequences)))
+
   def create_cluster_output_files(self, clusters):
     def create_file(cluster):
       filename = "cluster_{cluster}_multifasta.aln".format(cluster=cluster)
