@@ -43,8 +43,27 @@ class TestClusterSplitter(unittest.TestCase):
     return seq
 
   @patch('biopericles.ClusterSplitter.ClusterSplitter.absolute_directory_path')
+  @patch('biopericles.ClusterSplitter.ClusterSplitter.absolute_multifasta_path')
   @patch('biopericles.ClusterSplitter.os.getcwd')
-  def test_init_output_directory(self, cwd_mock, directory_path_mock):
+  def test_init_multifasta_path(self, cwd_mock, multifasta_path_mock, directory_path_mock):
+    cwd_mock.return_value = '/parent_dir/child_dir'
+
+    sequence_to_cluster_map = {}
+
+    multifasta = '/parent_dir/child_dir/file.aln'
+    multifasta_path_mock.return_value = '/parent_dir/child_dir/file.aln'
+    splitter = ClusterSplitter(multifasta, sequence_to_cluster_map)
+    self.assertEqual(splitter.multifasta_path, '/parent_dir/child_dir/file.aln')
+
+    multifasta = '~/another_directory/file.aln'
+    multifasta_path_mock.return_value = '/home/another_directory/file.aln'
+    splitter = ClusterSplitter(multifasta, sequence_to_cluster_map)
+    self.assertEqual(splitter.multifasta_path, '/home/another_directory/file.aln')
+
+  @patch('biopericles.ClusterSplitter.ClusterSplitter.absolute_directory_path')
+  @patch('biopericles.ClusterSplitter.ClusterSplitter.absolute_multifasta_path')
+  @patch('biopericles.ClusterSplitter.os.getcwd')
+  def test_init_output_directory(self, cwd_mock, multifasta_path_mock, directory_path_mock):
     cwd_mock.return_value = '/parent_dir/child_dir'
 
     multifasta = '/parent_dir/child_dir/file.aln'

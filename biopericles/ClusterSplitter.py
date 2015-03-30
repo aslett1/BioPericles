@@ -11,11 +11,18 @@ class NotFileException(ValueError):
 
 class ClusterSplitter(object):
   def __init__(self, multifasta, sequence_to_cluster_map, output_directory=None):
-    self.cluster_output_files = {}
+    clusters = self.get_clusters(sequence_to_cluster_map)
 
     if output_directory == None:
       output_directory = os.getcwd()
     self.output_directory = self.absolute_directory_path(output_directory)
+
+    self.cluster_output_files = {}
+    self.create_cluster_output_files(clusters)
+
+    self.multifasta_path = self.absolute_multifasta_path(multifasta)
+
+    self.sequence_write_success = Counter()
 
   def absolute_directory_path(self, path):
     if not os.path.isdir(path):
@@ -45,7 +52,7 @@ class ClusterSplitter(object):
     try:
       self.cluster_output_files = { cluster: create_file(cluster) for cluster in clusters }
     except IOError as e:
-      self.output_files = {}
+      self.cluster_output_files = {}
       raise IOError("Could not open output file to write cluster.  Exception was:\n%s" % e)
 
   def write_sequence_to_cluster(self, sequence_to_cluster_map, seq):
