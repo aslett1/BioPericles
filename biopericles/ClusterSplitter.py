@@ -6,6 +6,9 @@ from collections import Counter
 class NotDirectoryException(ValueError):
   pass
 
+class NotFileException(ValueError):
+  pass
+
 class ClusterSplitter(object):
   def __init__(self, multifasta, sequence_to_cluster_map, output_directory=None):
     self.cluster_output_files = {}
@@ -19,6 +22,12 @@ class ClusterSplitter(object):
       raise NotDirectoryException("output_directory '%s' is not a directory" % path)
     directory_name = os.path.normpath(path) # removes rogue '/' from path
     return os.path.abspath(directory_name)
+
+  def absolute_multifasta_path(self, path):
+    if not os.path.isfile(path):
+      raise NotFileException("multifasta file '%s' is not a file" % path)
+    file_path = os.path.normpath(path) # removes rogue '/' from path
+    return os.path.abspath(file_path)
 
   def get_clusters(self, sequence_to_cluster_map):
     clusters = sequence_to_cluster_map.values()

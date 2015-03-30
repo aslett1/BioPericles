@@ -4,7 +4,7 @@ from mock import patch, MagicMock
 from StringIO import StringIO
 
 from biopericles.ClusterSplitter import ClusterSplitter
-from biopericles.ClusterSplitter import NotDirectoryException
+from biopericles.ClusterSplitter import NotFileException, NotDirectoryException
 
 class TestClusterSplitter(unittest.TestCase):
 
@@ -58,7 +58,6 @@ class TestClusterSplitter(unittest.TestCase):
     splitter = ClusterSplitter(multifasta, sequence_to_cluster_map, '~/another_directory/')
     self.assertEqual(splitter.output_directory, '/home/another_directory')
 
-
   @patch('biopericles.ClusterSplitter.os.path')
   def test_absolute_multifasta_path(self, path_mock):
 
@@ -67,7 +66,7 @@ class TestClusterSplitter(unittest.TestCase):
     path_mock.sep.return_value = '/'
     splitter = self.uninitialised_splitter()
 
-    path_mock.isdir.return_value = False
+    path_mock.isfile.return_value = True
 
     multifasta_input_path = '/parent_dir/child_dir/file.aln'
     self.assertEqual(splitter.absolute_multifasta_path(multifasta_input_path), '/parent_dir/child_dir/file.aln')
@@ -75,14 +74,13 @@ class TestClusterSplitter(unittest.TestCase):
     multifasta_input_path = '~/child_dir/file.aln'
     self.assertEqual(splitter.absolute_multifasta_path(multifasta_input_path), '/home/child_dir/file.aln')
 
-    path_mock.isdir.return_value = True
+    path_mock.isfile.return_value = False
 
     directory = '~/another_directory/'
-    self.assertRaises(NotDirectoryException, splitter.absolute_directory_path, )
+    self.assertRaises(NotFileException, splitter.absolute_multifasta_path, directory)
 
     directory = '~/another_directory'
-    output_directory = splitter.absolute_directory_path(directory)
-    self.assertEqual(output_directory, '/home/another_directory')
+    self.assertRaises(NotFileException, splitter.absolute_multifasta_path, directory)
 
   @patch('biopericles.ClusterSplitter.os.path')
   def test_absolute_directory_path(self, path_mock):
