@@ -13,8 +13,10 @@ class OutputFileAlreadyExistsException(ValueError):
   pass
 
 class ClusterSplitter(object):
-  def __init__(self, multifasta, sequence_to_cluster_map, output_directory=None):
-    clusters = self.get_clusters(sequence_to_cluster_map)
+  def __init__(self, multifasta, sequence_cluster_map, output_directory=None):
+    self.sequence_cluster_map = sequence_cluster_map
+
+    clusters = self.get_clusters(sequence_cluster_map)
 
     if output_directory == None:
       output_directory = os.getcwd()
@@ -39,12 +41,12 @@ class ClusterSplitter(object):
     file_path = os.path.normpath(path) # removes rogue '/' from path
     return os.path.abspath(file_path)
 
-  def get_clusters(self, sequence_to_cluster_map):
-    clusters = sequence_to_cluster_map.values()
+  def get_clusters(self, sequence_cluster_map):
+    clusters = sequence_cluster_map.values()
     return sorted(list(set(clusters)))
 
-  def get_sequences(self, sequence_to_cluster_map):
-    sequences = sequence_to_cluster_map.keys()
+  def get_sequences(self, sequence_cluster_map):
+    sequences = sequence_cluster_map.keys()
     return sorted(list(set(sequences)))
 
   def create_cluster_output_files(self, clusters):
@@ -61,9 +63,9 @@ class ClusterSplitter(object):
       self.cluster_output_files = {}
       raise IOError("Could not open output file to write cluster.  Exception was:\n%s" % e)
 
-  def write_sequence_to_cluster(self, sequence_to_cluster_map, seq):
+  def write_sequence_to_cluster(self, sequence_cluster_map, seq):
     sequence_name = seq.id
-    output_cluster = sequence_to_cluster_map.get(sequence_name)
+    output_cluster = sequence_cluster_map.get(sequence_name)
     output_file = self.cluster_output_files.get(output_cluster)
     if output_file is not None:
       output_file.write(seq.format('fasta'))
@@ -71,12 +73,12 @@ class ClusterSplitter(object):
     return False
 
   def write_all_sequences(self):
-    names_of_sequences = self.get_sequences(self.sequence_to_cluster_map)
+    names_of_sequences = self.get_sequences(self.sequence_cluster_map)
     self.sequence_write_success = Counter({sequence: 0 for sequence in names_of_sequences})
     multifasta_file = open(self.multifasta_path, 'r')
     sequences = Bio.SeqIO.parse(multifasta_file, 'fasta')
     for seq in sequences:
-      success = self.write_sequence_to_cluster(self.sequence_to_cluster_map, seq)
+      success = self.write_sequence_to_cluster(self.sequence_cluster_map, seq)
       if success:
         self.sequence_write_success[seq.id] += 1
     return dict(self.sequence_write_success)
