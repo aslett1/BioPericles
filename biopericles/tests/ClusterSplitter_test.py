@@ -224,3 +224,36 @@ class TestClusterSplitter(unittest.TestCase):
 
     expected_success = {'seq1': 1, 'seq2': 1, 'seq3': 1, 'seq4': 1}
     self.assertEqual(splitter.sequence_write_success, expected_success)
+
+  @patch('biopericles.ClusterSplitter.Bio', create=True)
+  @patch('biopericles.ClusterSplitter.open', create=True)
+  def test_write_all_sequences_duplicates_and_missing(self, open_mock, biopython_mock):
+
+    sequences = [self.fake_sequence(*args) for args in zip(range(1,5), 'ACGT')]
+    sequences.append(sequences[0])
+    biopython_mock.SeqIO.parse.return_value = (seq for seq in sequences)
+
+    fake_multifasta_file = StringIO()
+    open_mock.return_value = fake_multifasta_file
+
+    splitter = self.uninitialised_splitter()
+    splitter.multifasta_path = '/home/multifasta.aln'
+    sequence_to_cluster_map = {
+                                         'seq1': 'cluster_A',
+                                         'seq2': 'cluster_A',
+                                         'seq3': 'cluster_A',
+                                         'seq4': 'cluster_A',
+                                         'seq_another': 'cluster_B'
+                                       }
+    splitter.sequence_to_cluster_map = sequence_to_cluster_map
+    splitter.write_sequence_to_cluster = MagicMock(return_value=True)
+
+    splitter.write_all_sequences()
+
+    open_mock.assert_called_once_with('/home/multifasta.aln', 'r')
+    biopython_mock.SeqIO.parse.assert_called_once_with(fake_multifasta_file, 'fasta')
+    for seq in sequences:
+      splitter.write_sequence_to_cluster.assert_any_call(sequence_to_cluster_map, seq)
+
+    expected_success = {'seq1': 2, 'seq2': 1, 'seq3': 1, 'seq4': 1, 'seq_another': 0}
+    self.assertEqual(splitter.sequence_write_success, expected_success)
