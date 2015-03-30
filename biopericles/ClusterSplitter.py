@@ -1,4 +1,7 @@
+import Bio
 import os
+
+from collections import Counter
 
 class NotDirectoryException(ValueError):
   pass
@@ -35,3 +38,23 @@ class ClusterSplitter(object):
     except IOError as e:
       self.output_files = {}
       raise IOError("Could not open output file to write cluster.  Exception was:\n%s" % e)
+
+  def write_sequence_to_cluster(self, sequence_to_cluster_map, seq):
+    sequence_name = seq.id
+    output_cluster = sequence_to_cluster_map.get(sequence_name)
+    output_file = self.cluster_output_files.get(output_cluster)
+    if output_file is not None:
+      output_file.write(seq.format('fasta'))
+      return True
+    return False
+
+  def write_all_sequences(self):
+    names_of_sequences = self.get_sequences(self.sequence_to_cluster_map)
+    self.sequence_write_success = Counter({sequence: 0 for sequence in names_of_sequences})
+    multifasta_file = open(self.multifasta_path, 'r')
+    sequences = Bio.SeqIO.parse(multifasta_file, 'fasta')
+    for seq in sequences:
+      success = self.write_sequence_to_cluster(self.sequence_to_cluster_map, seq)
+      if success:
+        self.sequence_write_success[seq.id] += 1
+    return dict(self.sequence_write_success)

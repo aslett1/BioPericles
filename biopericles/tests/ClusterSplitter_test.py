@@ -1,6 +1,6 @@
 import os
 import unittest
-from mock import patch
+from mock import patch, MagicMock
 from StringIO import StringIO
 
 from biopericles.ClusterSplitter import ClusterSplitter
@@ -34,6 +34,13 @@ class TestClusterSplitter(unittest.TestCase):
                '~/child_dir/file.aln': '~/child_dir/file.aln'
              }
     return lookup[path]
+
+  def fake_sequence(self, number, base):
+    seq = MagicMock()
+    name = "seq%s" % number
+    seq.id = name
+    seq.format.return_value = ">{name}\n{sequence}\n".format(name=name, sequence=base*8)
+    return seq
 
   @patch('biopericles.ClusterSplitter.ClusterSplitter.absolute_directory_path')
   @patch('biopericles.ClusterSplitter.os.getcwd')
@@ -155,3 +162,67 @@ class TestClusterSplitter(unittest.TestCase):
     sequence_list = splitter.get_sequences(sample_to_cluster_map)
 
     self.assertEqual(sequence_list, ['seq1', 'seq2', 'seq3', 'seq4'])
+
+  def test_write_sequence_to_cluster(self):
+    seq = MagicMock()
+
+    splitter = self.uninitialised_splitter()
+    splitter.cluster_output_files = {'cluster_A': StringIO(), 'cluster_B': StringIO()}
+
+    sequence_to_cluster_map = {'seq1': 'cluster_A', 'seq2': 'cluster_A', 'seq3': 'cluster_B'}
+
+    seq = self.fake_sequence(1, 'A')
+    success = splitter.write_sequence_to_cluster(sequence_to_cluster_map, seq)
+    self.assertTrue(success)
+    result_file = splitter.cluster_output_files['cluster_A']
+    result_file.seek(0)
+    result = result_file.read()
+    self.assertEqual(result, ">seq1\nAAAAAAAA\n")
+
+    seq = self.fake_sequence(2, 'G')
+    success = splitter.write_sequence_to_cluster(sequence_to_cluster_map, seq)
+    self.assertTrue(success)
+    result_file = splitter.cluster_output_files['cluster_A']
+    result_file.seek(0)
+    result = result_file.read()
+    self.assertEqual(result, ">seq1\nAAAAAAAA\n>seq2\nGGGGGGGG\n")
+
+    self.assertEqual(splitter.cluster_output_files['cluster_B'].read(), '')
+
+    seq = self.fake_sequence(3, 'T')
+    success = splitter.write_sequence_to_cluster(sequence_to_cluster_map, seq)
+    self.assertTrue(success)
+    result_file = splitter.cluster_output_files['cluster_B']
+    result_file.seek(0)
+    result = result_file.read()
+    self.assertEqual(result, ">seq3\nTTTTTTTT\n")
+
+    seq = self.fake_sequence(4, 'C')
+    success = splitter.write_sequence_to_cluster(sequence_to_cluster_map, seq)
+    # Doesn't raise an exception
+    self.assertFalse(success)
+
+  @patch('biopericles.ClusterSplitter.Bio', create=True)
+  @patch('biopericles.ClusterSplitter.open', create=True)
+  def test_write_all_sequences(self, open_mock, biopython_mock):
+
+    sequences = [self.fake_sequence(*args) for args in zip(range(1,5), 'ACGT')]
+    biopython_mock.SeqIO.parse.return_value = (seq for seq in sequences)
+
+    fake_multifasta_file = StringIO()
+    open_mock.return_value = fake_multifasta_file
+
+    splitter = self.uninitialised_splitter()
+    splitter.multifasta_path = '/home/multifasta.aln'
+    splitter.sequence_to_cluster_map = {}
+    splitter.write_sequence_to_cluster = MagicMock(return_value=True)
+
+    splitter.write_all_sequences()
+
+    open_mock.assert_called_once_with('/home/multifasta.aln', 'r')
+    biopython_mock.SeqIO.parse.assert_called_once_with(fake_multifasta_file, 'fasta')
+    for seq in sequences:
+      splitter.write_sequence_to_cluster.assert_any_call({}, seq)
+
+    expected_success = {'seq1': 1, 'seq2': 1, 'seq3': 1, 'seq4': 1}
+    self.assertEqual(splitter.sequence_write_success, expected_success)
