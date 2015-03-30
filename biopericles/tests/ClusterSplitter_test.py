@@ -17,24 +17,6 @@ class TestClusterSplitter(unittest.TestCase):
     else:
       return path
 
-  def fake_dirname(self, path):
-    lookup = {
-               '/home/another_directory': '/home',
-               '/home/another_directory/': '/home/another_directory',
-               '/home/child_dir': '/home',
-               '/home/child_dir/': '/home/child_dir',
-               '/home/child_dir/file.aln': '/home/child_dir',
-               '/parent_dir/child_dir': '/parent_dir',
-               '/parent_dir/child_dir/': '/parent_dir/child_dir',
-               '/parent_dir/child_dir/file.aln': '/parent_dir/child_dir',
-               '~/another_directory': '~',
-               '~/another_directory/': '~/another_directory',
-               '~/child_dir': '~',
-               '~/child_dir/': '~/child_dir',
-               '~/child_dir/file.aln': '~/child_dir'
-             }
-    return lookup[path]
-
   def fake_normpath(self, path):
     lookup = {
                '/home/another_directory': '/home/another_directory',
@@ -74,7 +56,6 @@ class TestClusterSplitter(unittest.TestCase):
   def test_absolute_directory_path(self, path_mock):
 
     path_mock.abspath.side_effect = self.fake_abspath
-    path_mock.dirname.side_effect = self.fake_dirname
     path_mock.normpath.side_effect = self.fake_normpath
     path_mock.sep.return_value = '/'
     splitter = self.uninitialised_splitter()
