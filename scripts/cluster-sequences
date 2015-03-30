@@ -45,3 +45,12 @@ if __name__ == '__main__':
                              metadata.sample_cluster_map,
                              args.output_dir)
   splitter.write_all_sequences()
+
+  for sequence_name, count in splitter.sequence_write_success.items():
+    if count == 0:
+      stderr("Warning: sequence '%s' not found in %s" % (sequence_name,
+                                                         multifasta_filename))
+    if count > 1:
+      stderr(
+        "Warning: sequence '%s' appears to have been written to more than one cluster" % sequence_name
+      )
