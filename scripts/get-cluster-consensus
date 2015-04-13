@@ -1,0 +1,41 @@
+#!/usr/bin/env python
+
+import argparse
+import sys
+
+from argparse import FileType, ArgumentError
+
+from biopericles.ClusterFastaFile import ClusterFastaFile
+
+def stderr(text):
+  print >> sys.stderr, text
+
+if __name__ == '__main__':
+  parser = argparse.ArgumentParser()
+  parser.description = "Find areas of consensus between aligned sequences in a multifasta"
+  parser.add_argument('multifasta', type=FileType(mode='r'),
+                      help="Multifasta with aligned sequences")
+  parser.add_argument('--output', '-o', dest="output_file", type=str, default='-',
+                      help="Output file (defaults to stdout)")
+
+  args = parser.parse_args()
+
+  stderr("Not implemented yet :(")
+  exit(1)
+
+  cluster = ClusterFastaFile()
+  cluster.load_from_file(args.multifasta)
+
+  if args.output == '-':
+    print cluster.get_consensus()
+  else:
+    try:
+      with open(args.output, 'w') as output_file:
+        output_file.write(cluster.get_consensus())
+    except IOError as e:
+      message = """\
+Could not open output file '{output_file}' for writing, exiting without doing any work.
+Original error:
+{exception}"""
+      stderr(message.format(output_file=args.output, exception=e))
+      exit(1)
