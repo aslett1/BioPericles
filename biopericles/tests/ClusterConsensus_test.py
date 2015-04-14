@@ -1,3 +1,4 @@
+import os
 import unittest
 
 from StringIO import StringIO
@@ -108,3 +109,19 @@ NNANTGUNCN
     cluster.output_file.seek(0)
     self.assertEqual(cluster.output_file.read(), expected_results)
 
+  def test_real_file(self):
+    test_folder = os.path.abspath(__file__)
+    test_data_path = os.path.join(test_folder, 'data', 'cluster_A_multifasta.aln')
+
+    cluster = ClusterConsensus()
+    cluster.output_file = StringIO()
+    with open(test_data_path, 'r') as input_file:
+      cluster.load_fasta_file(input_file)
+      cluster.write_consensus()
+
+    expected_response = """\
+>cluster_A_multifasta
+ANNAACAAAANN
+"""
+    cluster.output_file.seek(0)
+    self.assertEqual(cluster.output_file.read(), expected_response)
