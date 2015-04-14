@@ -25,25 +25,29 @@ if __name__ == '__main__':
                       help="Output file (defaults to stdout)")
 
   args = parser.parse_args()
+  if os.path.isfile(args.output_file):
+    stderr("Output file '%s' already exists.  Exiting" % args.output_file)
+    exit(1)
 
   cluster = ClusterConsensus()
-  cluster.load_fasta_file(args.multifasta)
 
-  cluster_name = get_cluster_name(args.multifasta.name)
-  cluster.cluster_name = cluster_name
+  for cluster_fasta in args.multifasta:
+    cluster.load_fasta_file(cluster_fasta)
+    cluster_name = get_cluster_name(cluster_fasta.name)
+    cluster.cluster_name = cluster_name
 
-  if args.output_file == '-':
-    cluster.output_file = sys.stdout
-    cluster.write_consensus()
-  else:
-    try:
-      with open(args.output_file, 'w') as output_file:
-        cluster.output_file = output_file
-        cluster.write_consensus()
-    except IOError as e:
-      message = """\
-Could not open output file '{output_file}' for writing, exiting without doing any work.
-Original error:
-{exception}"""
-      stderr(message.format(output_file=args.output, exception=e))
-      exit(1)
+    if args.output_file == '-':
+      cluster.output_file = sys.stdout
+      cluster.write_consensus()
+    else:
+      try:
+        with open(args.output_file, 'wa') as output_file:
+          cluster.output_file = output_file
+          cluster.write_consensus()
+      except IOError as e:
+        message = """\
+  Could not open output file '{output_file}' for writing, some results may be missing.
+  Original error:
+  {exception}"""
+        stderr(message.format(output_file=args.output_file, exception=e))
+        exit(1)
