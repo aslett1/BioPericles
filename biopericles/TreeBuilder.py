@@ -2,6 +2,8 @@ import Bio.SeqIO
 import os
 import tempfile
 
+from collections import OrderedDict
+
 def try_and_get_filename(filehandle):
   try:
     return filehandle.name
@@ -18,7 +20,7 @@ class TreeBuilder(object):
     Takes a filehandle to a aligned multifasta
     """
     list_of_sequences = Bio.SeqIO.parse(fasta_file, 'fasta')
-    self.sequences = {}
+    self.sequences = OrderedDict()
     for seq in list_of_sequences:
       if seq.name in self.sequences:
         message = "Tried to load sequences from {filename} but got multiple sequences for {sequence}"
@@ -35,8 +37,11 @@ class TreeBuilder(object):
   def write_output(self, output_directory, filename_prefix):
     pass # writes the sequences and internal nodes and full tree
 
-  def _create_temporary_phylip(self, fasta_file):
-    pass # reformats the fasta file as a phylip and returns a filehandle
+  def _create_temporary_phylip(self, sequences):
+    """Outputs sequence dictionary as a phylip and returns a filehandle"""
+    output_file = tempfile.NamedTemporaryFile('w', delete=False)
+    Bio.SeqIO.write(self.sequences.values(), output_file, 'phylip')
+    return output_file
 
   def _run_raxml(self, phylip_filename):
     pass # returns the stdout from raxml, raises an exception if it exits badly
@@ -51,4 +56,4 @@ class TreeBuilder(object):
     pass # return a filehandle for the fastml output tree
 
   def _find_fastml_sequence_file(self, output_directory):
-    tpass # return a filehandle for the fastml output sequences
+    pass # return a filehandle for the fastml output sequences

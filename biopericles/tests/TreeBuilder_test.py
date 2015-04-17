@@ -1,5 +1,6 @@
 import unittest
 
+from mock import patch
 from StringIO import StringIO
 
 from biopericles.TreeBuilder import TreeBuilder
@@ -39,3 +40,31 @@ TTAACAAAANN
 """)
 
     self.assertRaises(ValueError, builder.load_fasta_sequences, fasta_file)
+
+  @patch('biopericles.TreeBuilder.tempfile.NamedTemporaryFile')
+  def test_create_temporary_phylip(self, temp_mock):
+    temp_file = StringIO()
+    temp_mock.return_value = temp_file
+
+    builder = TreeBuilder()
+
+    fasta_file = StringIO("""\
+>cluster_A
+NNAACAAAANN
+>cluster_B
+CCAACAAAANN
+""")
+
+    expected_output = """\
+ 2 11
+cluster_A  NNAACAAAAN N
+cluster_B  CCAACAAAAN N
+"""
+
+    builder.load_fasta_sequences(fasta_file)
+    output_file = builder._create_temporary_phylip(builder.sequences)
+
+    self.assertEqual(output_file, temp_file)
+
+    output_file.seek(0)
+    self.assertEqual(output_file.read(), expected_output)
