@@ -3,6 +3,7 @@ import os
 import tempfile
 
 from collections import OrderedDict
+from copy import copy
 
 def try_and_get_filename(filehandle):
   try:
@@ -57,3 +58,33 @@ class TreeBuilder(object):
 
   def _find_fastml_sequence_file(self, output_directory):
     pass # return a filehandle for the fastml output sequences
+
+  def _merge_commandline_arguments(self, default_arguments, new_arguments):
+    """Takes a dictionary mapping strings to strings and merges it with another
+
+    If the value is None, it removes that key, value from the output;
+    If the key is in the default_arguments it is overwriden by new_arguments;
+    If the key isn't in default_arguments, it is added"""
+    arguments = copy(default_arguments)
+    for key,value in new_arguments.items():
+      if value == None and key in arguments:
+        del arguments[key]
+      elif value != None:
+        arguments[key] = value
+    return arguments
+
+  def _build_commandline_arguments(self, arguments):
+    """Turns an ordered dict of arguments into a list
+
+    Ignores values which are '';
+    Ignores keys and values where the value is None"""
+    output = []
+    for key,value in arguments.items():
+      if value == None:
+        continue
+      elif value == '':
+        output.append(key)
+      else:
+        output += [key, value]
+
+    return output

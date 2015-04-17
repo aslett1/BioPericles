@@ -1,5 +1,6 @@
 import unittest
 
+from collections import OrderedDict
 from mock import patch
 from StringIO import StringIO
 
@@ -68,3 +69,36 @@ cluster_B  CCAACAAAAN N
 
     output_file.seek(0)
     self.assertEqual(output_file.read(), expected_output)
+
+  def test_merge_commandline_arguments(self):
+    builder = TreeBuilder()
+
+    default_args = {'foo': 'bar'}
+    new_args = {'baz': 'bar'}
+    expected = {'foo': 'bar', 'baz': 'bar'}
+    actual = builder._merge_commandline_arguments(default_args, new_args)
+    self.assertEqual(expected, actual)
+    self.assertEqual(default_args, {'foo': 'bar'})
+
+    default_args = {'foo': 'bar', 'baz': 'bar'}
+    new_args = {'foo': None}
+    expected = {'baz': 'bar'}
+    actual = builder._merge_commandline_arguments(default_args, new_args)
+    self.assertEqual(expected, actual)
+
+    default_args = {'baz': 'bar'}
+    new_args = {'foo': None}
+    expected = {'baz': 'bar'}
+    actual = builder._merge_commandline_arguments(default_args, new_args)
+    self.assertEqual(expected, actual)
+
+  def test_build_commandline_arguments(self):
+    builder = TreeBuilder()
+
+    arguments = OrderedDict([('-foo', 'bar')])
+    actual = builder._build_commandline_arguments(arguments)
+    self.assertEqual(actual, ['-foo', 'bar'])
+
+    arguments = OrderedDict([('-foo', 'bar'), ('-v', ''), ('-h', None)])
+    actual = builder._build_commandline_arguments(arguments)
+    self.assertEqual(actual, ['-foo', 'bar', '-v'])
