@@ -1,10 +1,18 @@
+import os
+import shutil
+import tempfile
 import unittest
 
 from collections import OrderedDict
 from mock import patch
 from StringIO import StringIO
 
-from biopericles.TreeBuilder import TreeBuilder
+from biopericles.TreeBuilder import TreeBuilder, RaxmlException
+
+def test_data():
+  this_file = os.path.abspath(__file__)
+  this_dir = os.path.dirname(this_file)
+  return os.path.join(this_dir, 'data')
 
 class TestTreeBuilder(unittest.TestCase):
   def test_load_fasta_sequences(self):
@@ -69,6 +77,24 @@ cluster_B  CCAACAAAAN N
 
     output_file.seek(0)
     self.assertEqual(output_file.read(), expected_output)
+
+  def test_run_raxml(self):
+    builder = TreeBuilder()
+
+    fasta_file = open(os.path.join(test_data(), 'animals.mfa'), 'r')
+    builder.load_fasta_sequences(fasta_file)
+    fasta_file.close()
+
+    phylip_file = builder._create_temporary_phylip(builder.sequences)
+    phylip_file.close()
+
+    output_directory = tempfile.mkdtemp()
+    raxml_stdout, raxml_stderr = builder._run_raxml('raxmlHPC', {}, phylip_file.name, output_directory)
+
+    self.assertTrue('Best-scoring ML tree written to' in raxml_stdout)
+
+    os.remove(phylip_file.name)
+    shutil.rmtree(output_directory)
 
   def test_merge_commandline_arguments(self):
     builder = TreeBuilder()

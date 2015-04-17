@@ -1,5 +1,6 @@
 import Bio.SeqIO
 import os
+import subprocess
 import tempfile
 
 from collections import OrderedDict
@@ -10,6 +11,12 @@ def try_and_get_filename(filehandle):
     return filehandle.name
   except AttributeError:
     return "ANONYMOUS_FILE"
+
+class RaxmlException(Exception):
+  def __init__(self, message, returncode, stderr):
+    super(RaxmlException, self).__init__(message)
+    self.returncode = returncode
+    self.stderr = stderr
 
 class TreeBuilder(object):
   def __init__(self):
@@ -44,8 +51,28 @@ class TreeBuilder(object):
     Bio.SeqIO.write(self.sequences.values(), output_file, 'phylip')
     return output_file
 
-  def _run_raxml(self, phylip_filename):
-    pass # returns the stdout from raxml, raises an exception if it exits badly
+  def _run_raxml(self, raxml_executable, raxml_arguments, phylip_filename, output_directory):
+    """Returns the stdout from raxml, raises an exception if it exits badly"""
+    default_arguments = {
+      "-m": "GTRGAMMA",
+      "-p": "12345",
+      "-s": phylip_filename,
+      "-n": "raxml_output",
+      "-w": os.path.abspath(output_directory)
+    }
+    arguments_dict = self._merge_commandline_arguments(default_arguments,
+                                                       raxml_arguments)
+    arguments_list = self._build_commandline_arguments(arguments_dict)
+    raxml_process = subprocess.Popen([raxml_executable] + arguments_list,
+                                     stdout=subprocess.PIPE,
+                                     stderr=subprocess.PIPE
+                                    )
+    raxml_stdout, raxml_stderr = raxml_process.communicate()
+    if raxml_process.returncode != 0:
+      raise RaxmlException("Problem running raxml on %s; some output in %s" %
+                         (phylip_filename, output_directory),
+                           raxml_process.returncode, raxml_stderr)
+    return (raxml_stdout, raxml_stderr)
 
   def _get_tree_filename(self, raxml_stdout):
     pass # gets the filename for the tree from the raxml output
