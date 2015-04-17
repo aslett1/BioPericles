@@ -1,5 +1,6 @@
 import Bio.SeqIO
 import os
+import re
 import subprocess
 import tempfile
 
@@ -74,8 +75,15 @@ class TreeBuilder(object):
                            raxml_process.returncode, raxml_stderr)
     return (raxml_stdout, raxml_stderr)
 
-  def _get_tree_filename(self, raxml_stdout):
-    pass # gets the filename for the tree from the raxml output
+  def _get_raxml_tree_file(self, raxml_stdout):
+    """Gets the filename for the raxml generated tree from the raxml output"""
+    try:
+      (match,) = re.finditer("Best-scoring ML tree written to:\s+(\S+)",
+                             raxml_stdout)
+      return match.group(1) # the path to the output file
+    except ValueError:
+      # There wasn't just one match so we can't trust the output
+      return None
 
   def _run_fastml(self, output_directory, tree_filename, sequence_fasta_filename):
     pass # runs fastml using the tree from raxml and the sequence

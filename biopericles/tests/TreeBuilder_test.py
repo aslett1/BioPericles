@@ -96,6 +96,42 @@ cluster_B  CCAACAAAAN N
     os.remove(phylip_file.name)
     shutil.rmtree(output_directory)
 
+  def test_get_raxml_tree_file(self):
+    builder = TreeBuilder()
+
+    fake_stdout = """\
+Inference[0] final GAMMA-based Likelihood: -385.279958 tree written to file/tmp/tmpaA9uJN/RAxML_result.raxml_output
+
+
+Starting final GAMMA-basedthorough Optimization on tree 0 likelihood -385.279958 .... 
+
+FinalGAMMA-based Score of best tree -385.279958
+
+Program execution info written to/tmp/tmpaA9uJN/RAxML_info.raxml_output
+Best-scoring ML tree written to:  /tmp/tmpaA9uJN/RAxML_bestTree.raxml_output
+
+Overall execution time: 0.219131  secs or 0.000061 hours or 0.000003 days
+
+"""
+
+    output = builder._get_raxml_tree_file(fake_stdout)
+    self.assertEqual(output, '/tmp/tmpaA9uJN/RAxML_bestTree.raxml_output')
+
+    fake_stdout = """\
+Oh dear
+
+Something went wrong
+
+I've written something to /tmp/wrong.log
+
+But it is definitly not what you're looking for.
+
+Sorry
+"""
+
+    output = builder._get_raxml_tree_file(fake_stdout)
+    self.assertEqual(output, None)
+
   def test_merge_commandline_arguments(self):
     builder = TreeBuilder()
 
