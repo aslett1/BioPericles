@@ -14,9 +14,10 @@ def try_and_get_filename(filehandle):
     return "ANONYMOUS_FILE"
 
 class RaxmlException(Exception):
-  def __init__(self, message, returncode, stderr):
+  def __init__(self, message, returncode, stdout, stderr):
     super(RaxmlException, self).__init__(message)
     self.returncode = returncode
+    self.stdout = stdout
     self.stderr = stderr
 
 class TreeBuilder(object):
@@ -72,7 +73,9 @@ class TreeBuilder(object):
     if raxml_process.returncode != 0:
       raise RaxmlException("Problem running raxml on %s; some output in %s" %
                          (phylip_filename, output_directory),
-                           raxml_process.returncode, raxml_stderr)
+                           raxml_process.returncode,
+                           raxml_stdout,
+                           raxml_stderr)
     return (raxml_stdout, raxml_stderr)
 
   def _get_raxml_tree_file(self, raxml_stdout):
