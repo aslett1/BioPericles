@@ -61,8 +61,38 @@ class TreeBuilder(object):
     shutil.rmtree(output_directory)
     return tree
 
-  def add_hereditary_nodes(self, tree, sequences):
-    pass # takes a tree, a dictionary of BioPython sequences; returns a tree object
+  def add_hereditary_nodes(self):
+    """Adds hereditary nodes to self.tree and self.sequences"""
+    output_directory = tempfile.mkdtemp()
+
+    temporary_sequence_file = tempfile.NamedTemporaryFile(dir=output_directory,
+                                                         delete=False)
+    temporary_tree_file = tempfile.NamedTemporaryFile(dir=output_directory,
+                                                      delete=False)
+
+    Bio.SeqIO.write(self.sequences.values(), temporary_sequence_file, 'fasta')
+    Bio.Phylo.write(self.tree, temporary_tree_file, 'newick')
+
+    temporary_sequence_file.close()
+    temporary_tree_file.close()
+
+    self._run_fastml('fastml', {},
+                     temporary_tree_file.name,
+                     temporary_sequence_file.name,
+                     output_directory)
+
+    output_sequences_filename = os.path.join(output_directory,
+                                             'all_nodes.mfa')
+    output_tree_filename = os.path.join(output_directory,
+                                        'all_nodes.newick')
+
+    with open(output_sequences_filename, 'r') as output_sequences_file:
+      self.load_fasta_sequences(output_sequences_file)
+    self.tree = Bio.Phylo.read(output_tree_filename, 'newick')
+
+    os.remove(temporary_sequence_file.name)
+    os.remove(temporary_tree_file.name)
+    shutil.rmtree(output_directory)
 
   def write_output(self, output_directory, filename_prefix):
     pass # writes the sequences and internal nodes and full tree

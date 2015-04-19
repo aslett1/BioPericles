@@ -203,6 +203,31 @@ Sorry
     shutil.rmtree(output_directory)
     os.remove(fasta_file_without_comments)
 
+  @patch('biopericles.TreeBuilder.tempfile')
+  def test_add_hereditary_nodes(self, temp_mock):
+    builder = TreeBuilder()
+
+    output_directory = tempfile.mkdtemp()
+    temp_mock.mkdtemp.return_value = output_directory
+    temp_mock.NamedTemporaryFile.side_effect = \
+        (tempfile.NamedTemporaryFile(dir=output_directory, delete=False) for i in xrange(10))
+
+    fasta_filename = os.path.join(test_data(), 'animals.mfa')
+    with open(fasta_filename) as fasta_file:
+      builder.load_fasta_sequences(fasta_file)
+
+    tree_filename = os.path.join(test_data(), 'animals.terminal_nodes.newick')
+    builder.tree = Bio.Phylo.read(tree_filename, 'newick')
+
+    builder.add_hereditary_nodes()
+
+    self.assertIsInstance(builder.tree, Bio.Phylo.Newick.Tree)
+    tree_nodes = sorted([node.name for node in builder.tree.find_clades()])
+
+    self.assertItemsEqual(tree_nodes, builder.sequences.keys())
+    self.assertEqual(len(tree_nodes), 19)
+    self.assertFalse(os.path.isdir(output_directory))
+
   def test_merge_commandline_arguments(self):
     builder = TreeBuilder()
 
