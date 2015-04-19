@@ -55,6 +55,7 @@ class TreeBuilder(object):
                                                  output_directory)
     raxml_tree_filename = self._get_raxml_tree_file(raxml_stdout)
     (tree,) = Bio.Phylo.parse(raxml_tree_filename, 'newick')
+    tree.root_at_midpoint()
     os.remove(phylip.name)
     shutil.rmtree(output_directory)
     return tree
