@@ -7,7 +7,7 @@ import unittest
 import Bio.Phylo
 
 from collections import OrderedDict
-from mock import patch
+from mock import patch, MagicMock
 from StringIO import StringIO
 
 from biopericles.TreeBuilder import TreeBuilder, RaxmlException, FastmlException
@@ -227,6 +227,23 @@ Sorry
     self.assertItemsEqual(tree_nodes, builder.sequences.keys())
     self.assertEqual(len(tree_nodes), 19)
     self.assertFalse(os.path.isdir(output_directory))
+
+  def test_write_output(self):
+    builder = TreeBuilder()
+    builder.sequences = "Sequences"
+    builder.tree = "Tree"
+    builder.sequences_output_file = StringIO()
+    builder.tree_output_file = StringIO()
+
+    builder._write_tree = MagicMock()
+    builder._write_sequences = MagicMock()
+
+    builder.write_output()
+
+    builder._write_tree.assert_called_with(builder.tree,
+                                           builder.tree_output_file)
+    builder._write_sequences.assert_called_with(builder.sequences,
+                                                builder.sequences_output_file)
 
   def test_write_tree(self):
     builder = TreeBuilder()

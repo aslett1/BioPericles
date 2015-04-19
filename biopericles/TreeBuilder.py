@@ -32,6 +32,8 @@ class TreeBuilder(object):
   def __init__(self):
     self.sequences = None # a dictionary of {sequence_name: SeqIO object}
     self.tree = None # a BioPython Phylo tree
+    self.sequences_output_file = None
+    self.tree_output_file = None
 
   def load_fasta_sequences(self, fasta_file):
     """Load sequences from a fasta_file into a dictionary of {sequence_name: SeqIO object}
@@ -94,8 +96,9 @@ class TreeBuilder(object):
     os.remove(temporary_tree_file.name)
     shutil.rmtree(output_directory)
 
-  def write_output(self, output_directory, filename_prefix):
-    pass # writes the sequences and internal nodes and full tree
+  def write_output(self):
+    self._write_tree(self.tree, self.tree_output_file)
+    self._write_sequences(self.sequences, self.sequences_output_file)
 
   def _write_tree(self, tree, output_file):
     Bio.Phylo.write(tree, output_file, 'newick')
