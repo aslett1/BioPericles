@@ -228,6 +228,42 @@ Sorry
     self.assertEqual(len(tree_nodes), 19)
     self.assertFalse(os.path.isdir(output_directory))
 
+  def test_write_tree(self):
+    builder = TreeBuilder()
+
+    tree_filename = os.path.join(test_data(), 'animals.terminal_nodes.newick')
+    tree = Bio.Phylo.read(tree_filename, 'newick')
+
+    output = StringIO()
+
+    builder._write_tree(tree, output)
+
+    with open(tree_filename, 'r') as tree_file:
+      expected = tree_file.read()
+    output.seek(0)
+
+    self.assertEqual(output.read(), expected)
+
+  def test_write_sequences(self):
+    builder = TreeBuilder()
+
+    fasta_filename = os.path.join(test_data(), 'animals.mfa')
+    fasta_file = open(fasta_filename, 'r')
+    sequences = Bio.SeqIO.parse(fasta_file, 'fasta')
+
+    output = StringIO()
+
+    builder._write_sequences(sequences, output)
+
+    fasta_file.close()
+
+    with open(fasta_filename, 'r') as fasta_file:
+      expected = fasta_file.readlines()
+      expected = "".join(expected[5:]) # Remove comments from the top
+    output.seek(0)
+
+    self.assertEqual(output.read(), expected)
+
   def test_merge_commandline_arguments(self):
     builder = TreeBuilder()
 

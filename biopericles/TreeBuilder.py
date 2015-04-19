@@ -70,8 +70,8 @@ class TreeBuilder(object):
     temporary_tree_file = tempfile.NamedTemporaryFile(dir=output_directory,
                                                       delete=False)
 
-    Bio.SeqIO.write(self.sequences.values(), temporary_sequence_file, 'fasta')
-    Bio.Phylo.write(self.tree, temporary_tree_file, 'newick')
+    self._write_sequences(self.sequences.values(), temporary_sequence_file)
+    self._write_tree(self.tree, temporary_tree_file)
 
     temporary_sequence_file.close()
     temporary_tree_file.close()
@@ -96,6 +96,12 @@ class TreeBuilder(object):
 
   def write_output(self, output_directory, filename_prefix):
     pass # writes the sequences and internal nodes and full tree
+
+  def _write_tree(self, tree, output_file):
+    Bio.Phylo.write(tree, output_file, 'newick')
+
+  def _write_sequences(self, sequences, output_file):
+    Bio.SeqIO.write(sequences, output_file, 'fasta')
 
   def _create_temporary_phylip(self, sequences):
     """Outputs sequence dictionary as a phylip and returns a filehandle"""
