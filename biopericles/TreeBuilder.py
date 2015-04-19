@@ -21,6 +21,13 @@ class RaxmlException(Exception):
     self.stdout = stdout
     self.stderr = stderr
 
+class FastmlException(Exception):
+  def __init__(self, message, returncode, stdout, stderr):
+    super(FastmlException, self).__init__(message)
+    self.returncode = returncode
+    self.stdout = stdout
+    self.stderr = stderr
+
 class TreeBuilder(object):
   def __init__(self):
     self.sequences = None # a dictionary of {sequence_name: SeqIO object}
@@ -99,8 +106,32 @@ class TreeBuilder(object):
       # There wasn't just one match so we can't trust the output
       return None
 
-  def _run_fastml(self, output_directory, tree_filename, sequence_fasta_filename):
-    pass # runs fastml using the tree from raxml and the sequence
+  def _run_fastml(self, fastml_executable, fastml_arguments, tree_filename, sequence_fasta_filename, output_directory):
+    default_arguments = {
+      "-s": sequence_fasta_filename,
+      "-t": tree_filename,
+      "-x": os.path.join(output_directory, 'animals.all_nodes.newick'),
+      "-j": os.path.join(output_directory, 'animals.all.mfa'),
+      "-mg": '',
+      "-qp": ''
+    }
+
+    arguments_dict = self._merge_commandline_arguments(default_arguments,
+                                                       fastml_arguments)
+    arguments_list = self._build_commandline_arguments(arguments_dict)
+    fastml_process = subprocess.Popen([fastml_executable] + arguments_list,
+                                     stdout=subprocess.PIPE,
+                                     stderr=subprocess.PIPE,
+                                     cwd=output_directory
+                                    )
+    fastml_stdout, fastml_stderr = fastml_process.communicate()
+    if fastml_process.returncode != 0:
+      raise FastmlException("Problem running fastml using %s and %s; some output in %s" %
+                           (sequence_fasta_filename, tree_filename, output_directory),
+                           fastml_process.returncode,
+                           fastml_stdout,
+                           fastml_stderr)
+    return (fastml_stdout, fastml_stderr)
 
   def _find_fastml_tree_file(self, output_directory):
     pass # return a filehandle for the fastml output tree

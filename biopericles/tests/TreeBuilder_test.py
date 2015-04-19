@@ -1,5 +1,6 @@
 import os
 import random
+import re
 import shutil
 import tempfile
 import unittest
@@ -9,12 +10,25 @@ from collections import OrderedDict
 from mock import patch
 from StringIO import StringIO
 
-from biopericles.TreeBuilder import TreeBuilder, RaxmlException
+from biopericles.TreeBuilder import TreeBuilder, RaxmlException, FastmlException
 
 def test_data():
   this_file = os.path.abspath(__file__)
   this_dir = os.path.dirname(this_file)
   return os.path.join(this_dir, 'data')
+
+def create_fasta_without_comments(filename):
+  """Create a fasta file without comments
+
+  This is probably not the most efficient way but at least it is cross platform
+  and it runs plenty quickly for these tests."""
+  fasta_file_without_comments = tempfile.NamedTemporaryFile(delete=False)
+  with open(filename, 'r') as original_fasta_file:
+    for line in original_fasta_file:
+      line_without_comments = re.sub(r'\s*;.*$', '', line)
+      if line_without_comments.strip() != '':
+        fasta_file_without_comments.write(line_without_comments)
+  return fasta_file_without_comments.name
 
 class TestTreeBuilder(unittest.TestCase):
   def test_load_fasta_sequences(self):
@@ -163,6 +177,31 @@ Sorry
 
     output = builder._get_raxml_tree_file(fake_stdout)
     self.assertEqual(output, None)
+
+  def test_run_fastml(self):
+    builder = TreeBuilder()
+
+    fasta_filename = os.path.join(test_data(), 'animals.mfa')
+    tree_filename = os.path.join(test_data(), 'animals.terminal_nodes.newick')
+    output_directory = tempfile.mkdtemp()
+
+    # fastml doesn't like comments in fasta files, guesses it is a different
+    # format and gets confused when a sequence has a '>' in it.  I'm therefore
+    # creating a temporary file without the comments in it.
+    fasta_file_without_comments = create_fasta_without_comments(fasta_filename)
+
+    fastml_stdout, fastml_stderr = builder._run_fastml('fastml', {},
+                                                       tree_filename,
+                                                       fasta_file_without_comments,
+                                                       output_directory)
+
+    self.assertTrue(os.path.isfile(os.path.join(output_directory,
+                                                'animals.all_nodes.newick')))
+    self.assertTrue(os.path.isfile(os.path.join(output_directory,
+                                                'animals.all.mfa')))
+
+    shutil.rmtree(output_directory)
+    os.remove(fasta_file_without_comments)
 
   def test_merge_commandline_arguments(self):
     builder = TreeBuilder()
