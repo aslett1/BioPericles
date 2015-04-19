@@ -196,9 +196,9 @@ Sorry
                                                        output_directory)
 
     self.assertTrue(os.path.isfile(os.path.join(output_directory,
-                                                'animals.all_nodes.newick')))
+                                                'all_nodes.newick')))
     self.assertTrue(os.path.isfile(os.path.join(output_directory,
-                                                'animals.all.mfa')))
+                                                'all_nodes.mfa')))
 
     shutil.rmtree(output_directory)
     os.remove(fasta_file_without_comments)

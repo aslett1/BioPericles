@@ -38,6 +38,7 @@ class TreeBuilder(object):
 
     Takes a filehandle to a aligned multifasta
     """
+
     list_of_sequences = Bio.SeqIO.parse(fasta_file, 'fasta')
     self.sequences = OrderedDict()
     for seq in list_of_sequences:
@@ -111,10 +112,10 @@ class TreeBuilder(object):
     default_arguments = {
       "-s": sequence_fasta_filename,
       "-t": tree_filename,
-      "-x": os.path.join(output_directory, 'animals.all_nodes.newick'),
-      "-j": os.path.join(output_directory, 'animals.all.mfa'),
+      "-x": os.path.join(output_directory, 'all_nodes.newick'),
+      "-j": os.path.join(output_directory, 'all_nodes.mfa'),
       "-mg": '',
-      "-qp": ''
+      "-qf": ''
     }
 
     arguments_dict = self._merge_commandline_arguments(default_arguments,
