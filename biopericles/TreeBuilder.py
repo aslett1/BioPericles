@@ -133,12 +133,6 @@ class TreeBuilder(object):
                            fastml_stderr)
     return (fastml_stdout, fastml_stderr)
 
-  def _find_fastml_tree_file(self, output_directory):
-    pass # return a filehandle for the fastml output tree
-
-  def _find_fastml_sequence_file(self, output_directory):
-    pass # return a filehandle for the fastml output sequences
-
   def _merge_commandline_arguments(self, default_arguments, new_arguments):
     """Takes a dictionary mapping strings to strings and merges it with another
 
