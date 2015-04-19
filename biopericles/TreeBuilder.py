@@ -1,6 +1,7 @@
 import Bio.SeqIO
 import os
 import re
+import shutil
 import subprocess
 import tempfile
 
@@ -23,6 +24,7 @@ class RaxmlException(Exception):
 class TreeBuilder(object):
   def __init__(self):
     self.sequences = None # a dictionary of {sequence_name: SeqIO object}
+    self.tree = None # a BioPython Phylo tree
 
   def load_fasta_sequences(self, fasta_file):
     """Load sequences from a fasta_file into a dictionary of {sequence_name: SeqIO object}
@@ -39,7 +41,16 @@ class TreeBuilder(object):
       self.sequences[seq.name] = seq
 
   def build_tree(self):
-    pass # returns a Bio Python tree object
+    phylip = self._create_temporary_phylip(self.sequences)
+    phylip.close()
+    output_directory = tempfile.mkdtemp()
+    raxml_stdout, raxml_stderr = self._run_raxml('raxmlHPC', {}, phylip.name,
+                                                 output_directory)
+    raxml_tree_filename = self._get_raxml_tree_file(raxml_stdout)
+    (tree,) = Bio.Phylo.parse(raxml_tree_filename, 'newick')
+    os.remove(phylip.name)
+    shutil.rmtree(output_directory)
+    return tree
 
   def add_hereditary_nodes(self, tree, sequences):
     pass # takes a tree, a dictionary of BioPython sequences; returns a tree object

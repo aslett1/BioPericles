@@ -1,7 +1,9 @@
 import os
+import random
 import shutil
 import tempfile
 import unittest
+import Bio.Phylo
 
 from collections import OrderedDict
 from mock import patch
@@ -77,6 +79,36 @@ cluster_B  CCAACAAAAN N
 
     output_file.seek(0)
     self.assertEqual(output_file.read(), expected_output)
+
+  @patch("biopericles.TreeBuilder.tempfile")
+  def test_build_tree(self, temp_mock):
+    builder = TreeBuilder()
+
+    # I could mock _run_raxml but, because I'm using a regex to parse the
+    # results, I want to know straight away if the output of RAxML changes in a
+    # way that breaks this.
+
+    random_file = tempfile.NamedTemporaryFile('w', delete=False)
+    random_filename = random_file.name
+    random_folder = tempfile.mkdtemp()
+
+    temp_mock.NamedTemporaryFile.return_value = random_file
+    temp_mock.mkdtemp.return_value = random_folder
+
+    fasta_file = open(os.path.join(test_data(), 'animals.mfa'), 'r')
+    builder.load_fasta_sequences(fasta_file)
+    fasta_file.close()
+
+    tree = builder.build_tree()
+
+    tree_nodes = sorted([node.name for node in tree.get_terminals()])
+    expected_tree_nodes = ["Carp", "Chicken", "Cow", "Frog", "Human", "Loach",
+                           "Mouse", "Rat", "Seal", "Whale"]
+
+    self.assertIsInstance(tree, Bio.Phylo.Newick.Tree)
+    self.assertEqual(tree_nodes, expected_tree_nodes)
+    self.assertFalse(os.path.isdir(random_folder))
+    self.assertFalse(os.path.isfile(random_filename))
 
   def test_run_raxml(self):
     builder = TreeBuilder()
