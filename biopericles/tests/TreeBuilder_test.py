@@ -230,7 +230,7 @@ Sorry
 
   def test_write_output(self):
     builder = TreeBuilder()
-    builder.sequences = "Sequences"
+    builder.sequences = {"seq1": "a sequence object"}
     builder.tree = "Tree"
     builder.sequences_output_file = StringIO()
     builder.tree_output_file = StringIO()
@@ -240,9 +240,9 @@ Sorry
 
     builder.write_output()
 
-    builder._write_tree.assert_called_with(builder.tree,
+    builder._write_tree.assert_called_with("Tree",
                                            builder.tree_output_file)
-    builder._write_sequences.assert_called_with(builder.sequences,
+    builder._write_sequences.assert_called_with(["a sequence object"],
                                                 builder.sequences_output_file)
 
   def test_write_tree(self):

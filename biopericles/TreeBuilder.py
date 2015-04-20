@@ -1,4 +1,5 @@
 import Bio.SeqIO
+import Bio.Phylo
 import os
 import re
 import shutil
@@ -49,6 +50,7 @@ class TreeBuilder(object):
         raise ValueError(message.format(filename=try_and_get_filename(fasta_file),
                                         sequence=seq.name))
       self.sequences[seq.name] = seq
+    return self.sequences
 
   def build_tree(self):
     phylip = self._create_temporary_phylip(self.sequences)
@@ -59,6 +61,7 @@ class TreeBuilder(object):
     raxml_tree_filename = self._get_raxml_tree_file(raxml_stdout)
     (tree,) = Bio.Phylo.parse(raxml_tree_filename, 'newick')
     tree.root_at_midpoint()
+    self.tree = tree
     os.remove(phylip.name)
     shutil.rmtree(output_directory)
     return tree
@@ -98,7 +101,7 @@ class TreeBuilder(object):
 
   def write_output(self):
     self._write_tree(self.tree, self.tree_output_file)
-    self._write_sequences(self.sequences, self.sequences_output_file)
+    self._write_sequences(self.sequences.values(), self.sequences_output_file)
 
   def _write_tree(self, tree, output_file):
     Bio.Phylo.write(tree, output_file, 'newick')
