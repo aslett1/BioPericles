@@ -3,54 +3,24 @@ import Bio.Phylo
 import os
 import re
 import shutil
-import subprocess
 import tempfile
 
-from collections import OrderedDict
-from copy import copy
+from biopericles.Common import LoadFastaMixin, \
+                               ExternalApplicationException, \
+                               RunExternalApplicationMixin
 
-def try_and_get_filename(filehandle):
-  try:
-    return filehandle.name
-  except AttributeError:
-    return "ANONYMOUS_FILE"
+class RaxmlException(ExternalApplicationException):
+  pass
 
-class RaxmlException(Exception):
-  def __init__(self, message, returncode, stdout, stderr):
-    super(RaxmlException, self).__init__(message)
-    self.returncode = returncode
-    self.stdout = stdout
-    self.stderr = stderr
+class FastmlException(ExternalApplicationException):
+  pass
 
-class FastmlException(Exception):
-  def __init__(self, message, returncode, stdout, stderr):
-    super(FastmlException, self).__init__(message)
-    self.returncode = returncode
-    self.stdout = stdout
-    self.stderr = stderr
-
-class TreeBuilder(object):
+class TreeBuilder(LoadFastaMixin, RunExternalApplicationMixin):
   def __init__(self):
     self.sequences = None # a dictionary of {sequence_name: SeqIO object}
     self.tree = None # a BioPython Phylo tree
     self.sequences_output_file = None
     self.tree_output_file = None
-
-  def load_fasta_sequences(self, fasta_file):
-    """Load sequences from a fasta_file into a dictionary of {sequence_name: SeqIO object}
-
-    Takes a filehandle to a aligned multifasta
-    """
-
-    list_of_sequences = Bio.SeqIO.parse(fasta_file, 'fasta')
-    self.sequences = OrderedDict()
-    for seq in list_of_sequences:
-      if seq.name in self.sequences:
-        message = "Tried to load sequences from {filename} but got multiple sequences for {sequence}"
-        raise ValueError(message.format(filename=try_and_get_filename(fasta_file),
-                                        sequence=seq.name))
-      self.sequences[seq.name] = seq
-    return self.sequences
 
   def build_tree(self):
     phylip = self._create_temporary_phylip(self.sequences)
@@ -124,21 +94,16 @@ class TreeBuilder(object):
       "-n": "raxml_output",
       "-w": os.path.abspath(output_directory)
     }
-    arguments_dict = self._merge_commandline_arguments(default_arguments,
+    stdout, stderr, returncode = self._run_application(raxml_executable,
+                                                       default_arguments,
                                                        raxml_arguments)
-    arguments_list = self._build_commandline_arguments(arguments_dict)
-    raxml_process = subprocess.Popen([raxml_executable] + arguments_list,
-                                     stdout=subprocess.PIPE,
-                                     stderr=subprocess.PIPE
-                                    )
-    raxml_stdout, raxml_stderr = raxml_process.communicate()
-    if raxml_process.returncode != 0:
+    if returncode != 0:
       raise RaxmlException("Problem running raxml on %s; some output in %s" %
                          (phylip_filename, output_directory),
-                           raxml_process.returncode,
-                           raxml_stdout,
-                           raxml_stderr)
-    return (raxml_stdout, raxml_stderr)
+                           returncode,
+                           stdout,
+                           stderr)
+    return (stdout, stderr)
 
   def _get_raxml_tree_file(self, raxml_stdout):
     """Gets the filename for the raxml generated tree from the raxml output"""
@@ -160,49 +125,14 @@ class TreeBuilder(object):
       "-qf": ''
     }
 
-    arguments_dict = self._merge_commandline_arguments(default_arguments,
-                                                       fastml_arguments)
-    arguments_list = self._build_commandline_arguments(arguments_dict)
-    fastml_process = subprocess.Popen([fastml_executable] + arguments_list,
-                                     stdout=subprocess.PIPE,
-                                     stderr=subprocess.PIPE,
-                                     cwd=output_directory
-                                    )
-    fastml_stdout, fastml_stderr = fastml_process.communicate()
-    if fastml_process.returncode != 0:
+    stdout, stderr, returncode = self._run_application(fastml_executable,
+                                                       default_arguments,
+                                                       fastml_arguments,
+                                                       cwd=output_directory)
+    if returncode != 0:
       raise FastmlException("Problem running fastml using %s and %s; some output in %s" %
                            (sequence_fasta_filename, tree_filename, output_directory),
-                           fastml_process.returncode,
-                           fastml_stdout,
-                           fastml_stderr)
-    return (fastml_stdout, fastml_stderr)
-
-  def _merge_commandline_arguments(self, default_arguments, new_arguments):
-    """Takes a dictionary mapping strings to strings and merges it with another
-
-    If the value is None, it removes that key, value from the output;
-    If the key is in the default_arguments it is overwriden by new_arguments;
-    If the key isn't in default_arguments, it is added"""
-    arguments = copy(default_arguments)
-    for key,value in new_arguments.items():
-      if value == None and key in arguments:
-        del arguments[key]
-      elif value != None:
-        arguments[key] = value
-    return arguments
-
-  def _build_commandline_arguments(self, arguments):
-    """Turns an ordered dict of arguments into a list
-
-    Ignores values which are '';
-    Ignores keys and values where the value is None"""
-    output = []
-    for key,value in arguments.items():
-      if value == None:
-        continue
-      elif value == '':
-        output.append(key)
-      else:
-        output += [key, value]
-
-    return output
+                           returncode,
+                           stdout,
+                           stderr)
+    return (stdout, stderr)
