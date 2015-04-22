@@ -201,9 +201,17 @@ def install_fastml():
 def install_snp_sites_dependencies():
   apt_install('zlib1g-dev check autoconf libtool git')
 
-@task(pre=[install_snp_sites_dependencies, download_snp_sites])
+@task(pre=[download_snp_sites])
+def extract_snp_sites():
+  with cd(build_dir):
+    if os.path.isdir("snp_sites-%s" % SNP_SITES_VERSION):
+      skip_task("extract snp_sites")
+    else:
+      run("tar xzf snp_sites-%s.tgz" % SNP_SITES_VERSION)
+
+@task(pre=[install_snp_sites_dependencies, extract_snp_sites])
 def build_snp_sites():
-  snp_sites_directory = os.path.join(build_dir, "snp_sites")
+  snp_sites_directory = os.path.join(build_dir, "snp_sites-%s" % SNP_SITES_VERSION)
   with cd(snp_sites_directory):
     if os.path.isfile(os.path.join("src", ".libs", "snp-sites")):
       skip_task("build snp_sites")
@@ -216,7 +224,7 @@ def build_snp_sites():
 
 @task(pre=[build_snp_sites])
 def install_snp_sites():
-  snp_sites_directory = os.path.join(build_dir, "snp_sites")
+  snp_sites_directory = os.path.join(build_dir, "snp_sites-%s" % SNP_SITES_VERSION)
   with cd(snp_sites_directory):
     run("sudo make install")
     say("please run `export LD_LIBRARY_PATH=/usr/local/lib` in your terminal")
