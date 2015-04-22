@@ -9,7 +9,7 @@ logging.basicConfig(format='%(message)s', level=logging.INFO)
 
 RAXML_VERSION = "8.1.20"
 FASTML_VERSION = "3.1"
-SNP_SITES_VERSION = "1.4.2"
+SNP_SITES_VERSION = "1.5.0"
 
 RAXML_DOWNLOAD_URL = \
     "https://github.com/stamatak/standard-RAxML/archive/v{version}.tar.gz".format(version=RAXML_VERSION)
@@ -122,10 +122,11 @@ def download_fastml():
 @task(pre=[create_install_folder])
 def download_snp_sites():
   with cd(build_dir):
-    if os.path.isdir("snp_sites"):
-      skip_task("download snp_sites")
+    output_file = "snp_sites-{version}.tgz".format(version=SNP_SITES_VERSION)
+    if os.path.isfile(output_file):
+      skip_task("download %s" % output_file)
     else:
-      run("git clone https://github.com/sanger-pathogens/snp_sites.git")
+      download(SNP_SITES_DOWNLOAD_URL, output_file)
 
 @task(pre=[download_raxml, download_fastml, download_snp_sites])
 def download_source():
