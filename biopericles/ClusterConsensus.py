@@ -35,19 +35,22 @@ class ClusterConsensus(object):
 
   def _calculate_consensus(self, sequence_generator):
     sequence_strings = self._get_all_sequences(sequence_generator)
-    set_per_base = self._get_set_per_base(sequence_strings)
     bases = []
-    for i,nucleotide_set in enumerate(set_per_base):
+    for i,bases_in_ith_position in enumerate(zip(*sequence_strings)):
+      # bases_in_the_ith_position is a list of each of the bases at a particular
+      # position in each of the sequences (e.g. the first or second base in each
+      # position)
       if i % 100000 == 0:
         self.logger.info("Calculating the base in the %sth position" % i)
-      bases.append(self._compare_nucleotides(nucleotide_set))
+      bases.append(self._compare_bases(bases_in_ith_position))
     if len(bases) != self._get_length_of_longest(sequence_strings):
       raise ValueError("One sequence longer than the others, please make sure they are aligned")
     return "".join(bases)
 
-  def _compare_nucleotides(self, neucleotide_set):
+  def _compare_bases(self, bases):
+    bases_set = set(bases)
     try:
-      (nucleotide,) = neucleotide_set
+      (nucleotide,) = bases_set
       if nucleotide == '-':
         return 'N'
       else:
@@ -59,15 +62,6 @@ class ClusterConsensus(object):
   def _get_all_sequences(self, sequence_generator):
     self.logger.info("Loading all the sequences into memory")
     return [sequence.seq for sequence in sequence_generator]
-
-  def _get_set_per_base(self, sequence_strings):
-    self.logger.info("Creating sets for bases")
-    output = []
-    for i,bases in enumerate(zip(*sequence_strings)):
-      if i % 100000 == 0:
-        self.logger.info("Creating set for base '%s'" % i)
-      output.append(set(bases))
-    return output
 
   def _get_cluster_name(self):
     if self.cluster_name:

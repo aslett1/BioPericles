@@ -123,15 +123,6 @@ ANNAACAAAANN
     expected = ["AAAAACAAAAA-", "ATGAACAAAA--"]
     self.assertEqual(sequences, expected)
 
-  def test_get_set_per_base(self):
-    cluster = ClusterConsensus()
-    sequence_strings = ["AAAAACAAAAA-", "ATGAACAAAA--"]
-    expected = [set(['A']), set(['A','T']), set(['A','G']),
-                set(['A']), set(['A']), set(['C']),
-                set(['A']), set(['A']), set(['A']),
-                set(['A']), set(['A','-']), set(['-'])]
-    self.assertEqual(cluster._get_set_per_base(sequence_strings), expected)
-
   def test_get_length_of_longest(self):
     cluster = ClusterConsensus()
     sequence_strings = ["AAAAA", "ATGAACAAAA--"]
@@ -139,12 +130,12 @@ ANNAACAAAANN
 
     self.assertEqual(longest, 12)
 
-  def test_compare_nucleotides(self):
+  def test_compare_bases(self):
     cluster = ClusterConsensus()
 
-    self.assertEqual(cluster._compare_nucleotides(set(['A', 'A'])), 'A')
-    self.assertEqual(cluster._compare_nucleotides(set(['A', 'T'])), 'N')
-    self.assertEqual(cluster._compare_nucleotides(set(['A', 'N'])), 'N')
-    self.assertEqual(cluster._compare_nucleotides(set(['N', 'N'])), 'N')
-    self.assertEqual(cluster._compare_nucleotides(set(['A', '-'])), 'N')
-    self.assertEqual(cluster._compare_nucleotides(set(['-', '-'])), 'N')
+    self.assertEqual(cluster._compare_bases(['A', 'A']), 'A')
+    self.assertEqual(cluster._compare_bases(['A', 'T']), 'N')
+    self.assertEqual(cluster._compare_bases(['A', 'N']), 'N')
+    self.assertEqual(cluster._compare_bases(['N', 'N']), 'N')
+    self.assertEqual(cluster._compare_bases(['A', '-']), 'N')
+    self.assertEqual(cluster._compare_bases(['-', '-']), 'N')
