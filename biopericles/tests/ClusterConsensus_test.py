@@ -10,7 +10,7 @@ from biopericles.ClusterConsensus import ClusterConsensus
 class GeneratorMock(object):
   def __init__(self, sequences):
     self.call_count = 0
-    self.sequences = (seq for seq in sequences)
+    self.sequences = (FakeSequence(seq) for seq in sequences)
 
   def __iter__(self):
     for seq in self.sequences:
@@ -21,43 +21,27 @@ class GeneratorMock(object):
     self.call_count += 1
     return self.sequences.next()
 
+class FakeSequence(object):
+  def __init__(self, sequence):
+    self.seq = sequence
+
 class TestClusterConsensus(unittest.TestCase):
-  def test_get_pair_consensus(self):
-    cluster = ClusterConsensus()
-
-    self.assertRaises(ValueError, cluster._get_pair_consensus, 'A', 'AG')
-    self.assertEqual(cluster._get_pair_consensus('AG', 'AG'), 'AG')
-    self.assertEqual(cluster._get_pair_consensus('AG', 'AC'), 'AN')
-    self.assertEqual(cluster._get_pair_consensus('AGT', 'ACT'), 'ANT')
-    self.assertEqual(cluster._get_pair_consensus('-GT', 'ACT'), 'NNT')
-    self.assertEqual(cluster._get_pair_consensus('-GT', '-CT'), 'NNT')
-
-  def test_compare_nucleotides(self):
-    cluster = ClusterConsensus()
-
-    self.assertEqual(cluster._compare_nucleotides('A', 'A'), 'A')
-    self.assertEqual(cluster._compare_nucleotides('A', 'T'), 'N')
-    self.assertEqual(cluster._compare_nucleotides('A', 'N'), 'N')
-    self.assertEqual(cluster._compare_nucleotides('N', 'N'), 'N')
-    self.assertEqual(cluster._compare_nucleotides('A', '-'), 'N')
-    self.assertEqual(cluster._compare_nucleotides('-', '-'), 'N')
-
   def test_calculate_consensus(self):
     cluster = ClusterConsensus()
 
-    sequence_generator = (s for s in ['AG', 'AG', 'A'])
+    sequence_generator = (FakeSequence(s) for s in ['AG', 'AG', 'A'])
     self.assertRaises(ValueError, cluster._calculate_consensus, sequence_generator)
 
-    sequence_generator = (s for s in ['AG', 'AG', 'AG'])
+    sequence_generator = (FakeSequence(s) for s in ['AG', 'AG', 'AG'])
     self.assertEqual(cluster._calculate_consensus(sequence_generator), 'AG')
 
-    sequence_generator = (s for s in ['AG', 'AG', 'TG'])
+    sequence_generator = (FakeSequence(s) for s in ['AG', 'AG', 'TG'])
     self.assertEqual(cluster._calculate_consensus(sequence_generator), 'NG')
 
-    sequence_generator = (s for s in ['AG', 'AT', 'TG'])
+    sequence_generator = (FakeSequence(s) for s in ['AG', 'AT', 'TG'])
     self.assertEqual(cluster._calculate_consensus(sequence_generator), 'NN')
 
-    sequence_generator = (s for s in ['AG', 'A-', 'AG'])
+    sequence_generator = (FakeSequence(s) for s in ['AG', 'A-', 'AG'])
     self.assertEqual(cluster._calculate_consensus(sequence_generator), 'AN')
 
   @patch('biopericles.ClusterConsensus.Bio.SeqIO')
@@ -126,3 +110,41 @@ ANNAACAAAANN
 """
     cluster.output_file.seek(0)
     self.assertEqual(cluster.output_file.read(), expected_response)
+
+  def test_get_all_sequences(self):
+    test_folder = os.path.abspath(os.path.dirname(__file__))
+    test_data_path = os.path.join(test_folder, 'data', 'cluster_A_multifasta.aln')
+
+    cluster = ClusterConsensus()
+    with open(test_data_path, 'r') as input_file:
+      cluster.load_fasta_file(input_file)
+      sequences = cluster._get_all_sequences(cluster.sequences)
+
+    expected = ["AAAAACAAAAA-", "ATGAACAAAA--"]
+    self.assertEqual(sequences, expected)
+
+  def test_get_set_per_base(self):
+    cluster = ClusterConsensus()
+    sequence_strings = ["AAAAACAAAAA-", "ATGAACAAAA--"]
+    expected = [set(['A']), set(['A','T']), set(['A','G']),
+                set(['A']), set(['A']), set(['C']),
+                set(['A']), set(['A']), set(['A']),
+                set(['A']), set(['A','-']), set(['-'])]
+    self.assertEqual(cluster._get_set_per_base(sequence_strings), expected)
+
+  def test_get_length_of_longest(self):
+    cluster = ClusterConsensus()
+    sequence_strings = ["AAAAA", "ATGAACAAAA--"]
+    longest = cluster._get_length_of_longest(sequence_strings)
+
+    self.assertEqual(longest, 12)
+
+  def test_compare_nucleotides(self):
+    cluster = ClusterConsensus()
+
+    self.assertEqual(cluster._compare_nucleotides(set(['A', 'A'])), 'A')
+    self.assertEqual(cluster._compare_nucleotides(set(['A', 'T'])), 'N')
+    self.assertEqual(cluster._compare_nucleotides(set(['A', 'N'])), 'N')
+    self.assertEqual(cluster._compare_nucleotides(set(['N', 'N'])), 'N')
+    self.assertEqual(cluster._compare_nucleotides(set(['A', '-'])), 'N')
+    self.assertEqual(cluster._compare_nucleotides(set(['-', '-'])), 'N')

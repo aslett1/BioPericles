@@ -1,5 +1,6 @@
 import os
 import random
+import logging
 
 import Bio.SeqIO
 from Bio.Seq import Seq
@@ -11,6 +12,7 @@ class ClusterConsensus(object):
     self.sequences = None # a SeqRecord generator or list
     self.output_file = None
     self.cluster_name = None
+    self.logger = logging.getLogger(__name__)
 
   def load_fasta_file(self, cluster_file):
     self.sequences = Bio.SeqIO.parse(cluster_file, 'fasta')
@@ -32,28 +34,32 @@ class ClusterConsensus(object):
 
 
   def _calculate_consensus(self, sequence_generator):
-    consensus = sequence_generator.next()
-    for sequence in sequence_generator:
-      consensus = self._get_pair_consensus(consensus, sequence)
-    return consensus
+    sequence_strings = self._get_all_sequences(sequence_generator)
+    set_per_base = self._get_set_per_base(sequence_strings)
+    bases = []
+    for i,nucleotide_set in enumerate(set_per_base):
+      self.logger.info("Calculating the base in the %sth position" % i)
+      bases.append(self._compare_nucleotides(nucleotide_set))
+    if len(bases) != self._get_length_of_longest(sequence_strings):
+      raise ValueError("One sequence longer than the others, please make sure they are aligned")
+    return "".join(bases)
 
-  def _get_pair_consensus(self, sequence_1, sequence_2):
-    if len(sequence_1) != len(sequence_2):
-      message = """\
-Cannot evaluate consensus between sequences of differing lengths.
-Sequence 1 was {} characters long, Sequence 2 was {} characters long.
-"""
-      raise ValueError(message.format(len(sequence_1), len(sequence_2)))
-    consensus = map(self._compare_nucleotides, *(sequence_1,sequence_2))
-    return ''.join(consensus)
+  def _compare_nucleotides(self, neucleotide_set):
+    try:
+      (nucleotide,) = neucleotide_set
+      if nucleotide == '-':
+        return 'N'
+      else:
+        return nucleotide
+    except ValueError:
+      # More than one base in this position
+      return 'N'
 
-  def _compare_nucleotides(self, n1, n2):
-    if n1 == '-' or n2 == '-':
-      return 'N'
-    elif n1 == n2:
-      return n1
-    else:
-      return 'N'
+  def _get_all_sequences(self, sequence_generator):
+    return [sequence.seq for sequence in sequence_generator]
+
+  def _get_set_per_base(self, sequence_strings):
+    return [set(bases) for bases in zip(*sequence_strings)]
 
   def _get_cluster_name(self):
     if self.cluster_name:
@@ -64,3 +70,7 @@ Sequence 1 was {} characters long, Sequence 2 was {} characters long.
     except AttributeError:
       name = "cluster_%s" % random.randrange(10000,100000)
     return name
+
+  def _get_length_of_longest(self, sequence_strings):
+    longest = max(sequence_strings, key=len)
+    return len(longest)
