@@ -1,6 +1,6 @@
+import logging
 import os
 import random
-import logging
 
 import Bio.SeqIO
 from Bio.Seq import Seq
@@ -38,7 +38,8 @@ class ClusterConsensus(object):
     set_per_base = self._get_set_per_base(sequence_strings)
     bases = []
     for i,nucleotide_set in enumerate(set_per_base):
-      self.logger.info("Calculating the base in the %sth position" % i)
+      if i % 100000 == 0:
+        self.logger.info("Calculating the base in the %sth position" % i)
       bases.append(self._compare_nucleotides(nucleotide_set))
     if len(bases) != self._get_length_of_longest(sequence_strings):
       raise ValueError("One sequence longer than the others, please make sure they are aligned")
@@ -56,10 +57,17 @@ class ClusterConsensus(object):
       return 'N'
 
   def _get_all_sequences(self, sequence_generator):
+    self.logger.info("Loading all the sequences into memory")
     return [sequence.seq for sequence in sequence_generator]
 
   def _get_set_per_base(self, sequence_strings):
-    return [set(bases) for bases in zip(*sequence_strings)]
+    self.logger.info("Creating sets for bases")
+    output = []
+    for i,bases in enumerate(zip(*sequence_strings)):
+      if i % 100000 == 0:
+        self.logger.info("Creating set for base '%s'" % i)
+      output.append(set(bases))
+    return output
 
   def _get_cluster_name(self):
     if self.cluster_name:
