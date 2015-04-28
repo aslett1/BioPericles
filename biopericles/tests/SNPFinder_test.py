@@ -6,14 +6,14 @@ import vcf
 
 from mock import MagicMock
 from StringIO import StringIO
-from biopericles.SNPFinder import SNPFinder, SNPSitesReader
+from biopericles.SNPFinder import SNPFeatureBuilder, SNPSitesReader
 
 def test_data():
   this_file = os.path.abspath(__file__)
   this_dir = os.path.dirname(this_file)
   return os.path.join(this_dir, 'data')
 
-class TestSNPReader(unittest.TestCase):
+class TestSNPSitesReader(unittest.TestCase):
   def test_ammend_line(self):
     snp_sites_old_bases = SNPSitesReader.__bases__
     SNPSitesReader.__bases__ = (MagicMock,) # I don't want to test vcf.Reader
@@ -56,17 +56,17 @@ class TestSNPReader(unittest.TestCase):
 
     self.assertItemsEqual(samples_with_alternative_bases, expected)
 
-class TestSNPFinder(unittest.TestCase):
-  def test_add_snps(self):
+class TestSNPFeatureBuilder(unittest.TestCase):
+  def test_add_vcf(self):
     pass
 
   def test_run_snp_sites(self):
-    finder = SNPFinder()
+    builder = SNPFeatureBuilder()
 
     fasta_filename = os.path.join(test_data(), 'file_with_SNPs.aln')
     output_directory = tempfile.mkdtemp()
 
-    stdout, stderr = finder._run_snp_sites('snp-sites', {},
+    stdout, stderr = builder._run_snp_sites('snp-sites', {},
                                            fasta_filename,
                                            output_directory)
 

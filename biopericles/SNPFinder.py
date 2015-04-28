@@ -38,10 +38,13 @@ class SNPSitesReader(Reader):
     self.reader = reader
     return record
 
-class SNPFinder(LoadFastaMixin, RunExternalApplicationMixin):
+class SNPFeatureBuilder(LoadFastaMixin, RunExternalApplicationMixin):
   def __init__(self):
     self.sequences = {}
-    self.snps = None
+    self.vcf = None
+
+  def add_vcf(self):
+    pass
 
   def add_snps(self):
     pass
