@@ -60,6 +60,12 @@ class TestSNPFeatureBuilder(unittest.TestCase):
   def test_add_vcf(self):
     pass
 
+  def test_create_features(self):
+    pass
+
+  def test_write_vcf(self):
+    pass
+
   def test_run_snp_sites(self):
     builder = SNPFeatureBuilder()
 

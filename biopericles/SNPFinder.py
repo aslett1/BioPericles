@@ -9,6 +9,12 @@ from biopericles.Common import LoadFastaMixin, \
 class SNPSitesException(ExternalApplicationException):
   pass
 
+class SNPFeature(object):
+  def __init__(self, name, label, features):
+    self.name = name
+    self.label = label
+    self.features = features
+
 class SNPSitesReader(Reader):
   """Wraps PyVCF to make it compatible with our VCF Files
 
@@ -42,11 +48,15 @@ class SNPFeatureBuilder(LoadFastaMixin, RunExternalApplicationMixin):
   def __init__(self):
     self.sequences = {}
     self.vcf = None
+    self.vcf_output_file = None
 
   def add_vcf(self):
     pass
 
-  def add_snps(self):
+  def create_features(self):
+    pass
+
+  def write_vcf(self):
     pass
 
   def _run_snp_sites(self, snp_sites_executable, arguments, fasta_filename,
