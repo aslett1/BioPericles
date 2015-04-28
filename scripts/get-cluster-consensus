@@ -50,7 +50,7 @@ if __name__ == '__main__':
       cluster.write_consensus()
     else:
       try:
-        with open(args.output_file, 'wa') as output_file:
+        with open(args.output_file, 'a') as output_file:
           cluster.output_file = output_file
           cluster.write_consensus()
       except IOError as e:
