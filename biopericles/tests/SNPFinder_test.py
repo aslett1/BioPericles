@@ -4,8 +4,9 @@ import tempfile
 import unittest
 import vcf
 
-from mock import MagicMock
+from mock import MagicMock, patch
 from StringIO import StringIO
+
 from biopericles.SNPFinder import SNPFeatureBuilder, SNPSitesReader
 
 def test_data():
@@ -57,8 +58,33 @@ class TestSNPSitesReader(unittest.TestCase):
     self.assertItemsEqual(samples_with_alternative_bases, expected)
 
 class TestSNPFeatureBuilder(unittest.TestCase):
-  def test_add_vcf(self):
-    pass
+  @patch("biopericles.SNPFinder.tempfile")
+  def test_add_vcf(self, temp_mock):
+    builder = SNPFeatureBuilder()
+
+    temp_fasta_file = tempfile.NamedTemporaryFile('w', delete=False)
+    temp_vcf_file =  tempfile.NamedTemporaryFile('w', delete=False)
+    random_folder = tempfile.mkdtemp()
+
+    temp_mock.NamedTemporaryFile.side_effect = [temp_fasta_file, temp_vcf_file]
+    temp_mock.mkdtemp.return_value = random_folder
+
+    fasta_filename = os.path.join(test_data(), 'file_with_SNPs.aln')
+    fasta_file = open(fasta_filename, 'r')
+
+    builder.load_fasta_sequences(fasta_file)
+    builder.add_vcf()
+
+    self.assertIsInstance(builder.vcf, SNPSitesReader)
+    self.assertIsInstance(builder.vcf.next(), vcf.model._Record)
+
+    self.assertFalse(os.path.isfile(temp_fasta_file.name))
+    self.assertFalse(os.path.isdir(random_folder))
+    self.assertTrue(os.path.isfile(temp_vcf_file.name))
+
+    fasta_file.close()
+    temp_vcf_file.close()
+    os.remove(temp_vcf_file.name)
 
   def test_create_features(self):
     pass

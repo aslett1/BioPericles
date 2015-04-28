@@ -1,5 +1,8 @@
+import Bio.SeqIO
 import os
 import re
+import shutil
+import tempfile
 
 from vcf import Reader
 from biopericles.Common import LoadFastaMixin, \
@@ -49,15 +52,34 @@ class SNPFeatureBuilder(LoadFastaMixin, RunExternalApplicationMixin):
     self.sequences = {}
     self.vcf = None
     self.vcf_output_file = None
+    self.temp_vcf_file = None
 
   def add_vcf(self):
-    pass
+    temp_fasta_file = tempfile.NamedTemporaryFile('w', delete=False)
+    self.temp_vcf_file = tempfile.NamedTemporaryFile('w', delete=False)
+    self._write_sequences(self.sequences.values(), temp_fasta_file)
+    temp_fasta_file.close()
+    self.temp_vcf_file.close()
+
+    output_directory = tempfile.mkdtemp()
+
+    self._run_snp_sites('snp-sites', {'-o': self.temp_vcf_file.name},
+                        temp_fasta_file.name, output_directory)
+
+    self.temp_vcf_file = open(self.temp_vcf_file.name, 'r')
+    self.vcf = SNPSitesReader(self.temp_vcf_file)
+
+    os.remove(temp_fasta_file.name)
+    shutil.rmtree(output_directory)
 
   def create_features(self):
     pass
 
   def write_vcf(self):
     pass
+
+  def _write_sequences(self, sequences, output_file):
+    Bio.SeqIO.write(sequences, output_file, 'fasta')
 
   def _run_snp_sites(self, snp_sites_executable, arguments, fasta_filename,
                      output_directory):
