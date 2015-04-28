@@ -20,6 +20,10 @@ def get_cluster_name(path):
   name = os.path.splitext(filename)[0] # remove extension
   return name
 
+def file_size(filehandle):
+  filename = filehandle.name
+  return os.path.getsize(filename)
+
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
   parser.description = "Find areas of consensus between aligned sequences in a multifasta"
@@ -35,7 +39,7 @@ if __name__ == '__main__':
 
   cluster = ClusterConsensus()
 
-  for cluster_fasta in args.multifasta:
+  for cluster_fasta in sorted(args.multifasta, key=file_size):
     logger.info("Loading sequences from %s" % cluster_fasta.name)
     cluster.load_fasta_file(cluster_fasta)
     cluster_name = get_cluster_name(cluster_fasta.name)
