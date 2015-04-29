@@ -65,15 +65,14 @@ class ClusterConsensus(object):
     return ((i, [sequence[i] for sequence in sequence_strings]) for i in xrange(length_of_sequences))
 
   def _compare_bases(self, bases):
-    bases_set = set(bases)
-    try:
-      (nucleotide,) = bases_set
-      if nucleotide == '-':
-        return 'N'
-      else:
-        return nucleotide
-    except ValueError:
-      # More than one base in this position
+    first_base = bases[0]
+    if not first_base in 'AGCT':
+      return 'N'
+    elif len(bases) == bases.count(first_base):
+      # Previously I created a set of all the bases,
+      # this is 10 times quicker
+      return first_base
+    else:
       return 'N'
 
   def _get_all_sequences(self, sequence_generator):
