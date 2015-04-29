@@ -18,6 +18,11 @@ class SNPFeature(object):
     self.label = label
     self.features = features
 
+class SNPFeatureLabel(object):
+  def __init__(self, chromosome, position):
+    self.chromosome = chromosome
+    self.position = position
+
 class SNPSitesReader(Reader):
   """Wraps PyVCF to make it compatible with our VCF Files
 
@@ -53,6 +58,8 @@ class SNPFeatureBuilder(LoadFastaMixin, RunExternalApplicationMixin):
     self.vcf = None
     self.vcf_output_file = None
     self.temp_vcf_file = None
+    self.feature_labels = [] # list of feature label objects
+    self.features = {} # map of sample names to feature objects
 
   def add_vcf(self):
     temp_fasta_file = tempfile.NamedTemporaryFile('w', delete=False)
@@ -73,6 +80,12 @@ class SNPFeatureBuilder(LoadFastaMixin, RunExternalApplicationMixin):
     shutil.rmtree(output_directory)
 
   def create_features(self):
+    pass
+
+  def _update_features(self, record):
+    pass
+
+  def _update_feature_labels(self, record):
     pass
 
   def write_vcf(self):

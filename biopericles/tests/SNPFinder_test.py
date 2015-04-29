@@ -14,6 +14,22 @@ def test_data():
   this_dir = os.path.dirname(this_file)
   return os.path.join(this_dir, 'data')
 
+class FakeRecord(object):
+  def __init__(self, chromosome, position, calls):
+    self.CHROM = chromosome
+    self.POS = position
+    sample_names = ["sample_%s" % i for i in range(len(calls))]
+    self.samples = [FakeCall(*args) for args in zip(sample_names, calls)]
+
+class FakeCall(object):
+  def __init__(self, sample, call):
+    self.data = FakeDatum(call)
+    self.sample = sample
+
+class FakeDatum(object):
+  def __init__(self, datum):
+    self.AB = datum
+
 class TestSNPSitesReader(unittest.TestCase):
   def test_ammend_line(self):
     snp_sites_old_bases = SNPSitesReader.__bases__
@@ -87,6 +103,9 @@ class TestSNPFeatureBuilder(unittest.TestCase):
     os.remove(temp_vcf_file.name)
 
   def test_create_features(self):
+    pass
+
+  def test_update_features(self):
     pass
 
   def test_write_vcf(self):
