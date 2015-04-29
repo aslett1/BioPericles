@@ -1,5 +1,6 @@
 import Bio.SeqIO
 import Bio.Phylo
+import logging
 import os
 import re
 import shutil
@@ -21,14 +22,18 @@ class TreeBuilder(LoadFastaMixin, RunExternalApplicationMixin):
     self.tree = None # a BioPython Phylo tree
     self.sequences_output_file = None
     self.tree_output_file = None
+    self.logger = logging.getLogger(__name__)
 
   def build_tree(self):
     phylip = self._create_temporary_phylip(self.sequences)
+    self.logger.info("Created temporary phylip %s for raxml" % phylip.name)
     phylip.close()
     output_directory = tempfile.mkdtemp()
+    self.logger.info("Created output directory %s for raxml" % output_directory)
     raxml_stdout, raxml_stderr = self._run_raxml('raxmlHPC', {}, phylip.name,
                                                  output_directory)
     raxml_tree_filename = self._get_raxml_tree_file(raxml_stdout)
+    self.logger.info("raxml output tree to %s" % raxml_tree_filename)
     (tree,) = Bio.Phylo.parse(raxml_tree_filename, 'newick')
     tree.root_at_midpoint()
     self.tree = tree
@@ -39,6 +44,7 @@ class TreeBuilder(LoadFastaMixin, RunExternalApplicationMixin):
   def add_hereditary_nodes(self):
     """Adds hereditary nodes to self.tree and self.sequences"""
     output_directory = tempfile.mkdtemp()
+    self.logger.info("Created output directory %s for fastml" % output_directory)
 
     temporary_sequence_file = tempfile.NamedTemporaryFile(dir=output_directory,
                                                          delete=False)
@@ -46,7 +52,11 @@ class TreeBuilder(LoadFastaMixin, RunExternalApplicationMixin):
                                                       delete=False)
 
     self._write_sequences(self.sequences.values(), temporary_sequence_file)
+    self.logger.info("Temporarily stored sequences in %s" %
+                      temporary_sequence_file.name)
     self._write_tree(self.tree, temporary_tree_file)
+    self.logger.info("Temporarily stored tree in %s" %
+                      temporary_tree_file.name)
 
     temporary_sequence_file.close()
     temporary_tree_file.close()
@@ -63,7 +73,11 @@ class TreeBuilder(LoadFastaMixin, RunExternalApplicationMixin):
 
     with open(output_sequences_filename, 'r') as output_sequences_file:
       self.load_fasta_sequences(output_sequences_file)
+      self.logger.info("Reloaded ancestral sequences from %s" %
+                       output_sequences_filename)
     self.tree = Bio.Phylo.read(output_tree_filename, 'newick')
+    self.logger.info("Loaded ancestral tree from %s" %
+                     output_tree_filename)
 
     os.remove(temporary_sequence_file.name)
     os.remove(temporary_tree_file.name)
