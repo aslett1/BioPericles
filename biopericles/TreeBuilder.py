@@ -33,6 +33,18 @@ class TreeBuilder(LoadFastaMixin, RunExternalApplicationMixin):
     raxml_stdout, raxml_stderr = self._run_raxml('raxmlHPC', {}, phylip.name,
                                                  output_directory)
     raxml_tree_filename = self._get_raxml_tree_file(raxml_stdout)
+    self.logger.info("Wrote raxml tree file to %s" % raxml_tree_filename)
+    if raxml_tree_filename == None:
+      error_message = """\
+Could not parse where raxml stored the output tree.
+Raxml stdout:
+%s
+Raxml stderr:
+%s
+""" % (raxml_stdout, raxml_stderr)
+      self.logger.error(error_message)
+      raise RaxmlException("Could not parse where raxml stored output tree",
+                           0, raxml_stdout, raxml_stderr)
     self.logger.info("raxml output tree to %s" % raxml_tree_filename)
     (tree,) = Bio.Phylo.parse(raxml_tree_filename, 'newick')
     tree.root_at_midpoint()
@@ -112,6 +124,14 @@ class TreeBuilder(LoadFastaMixin, RunExternalApplicationMixin):
                                                        default_arguments,
                                                        raxml_arguments)
     if returncode != 0:
+      error_message = """\
+Problem running raxml on %s.
+stdout:
+%s
+stderr:
+%s
+""" % (phylip_filename, stdout,stderr)
+      self.logger.error(error_message)
       raise RaxmlException("Problem running raxml on %s; some output in %s" %
                          (phylip_filename, output_directory),
                            returncode,
@@ -124,10 +144,21 @@ class TreeBuilder(LoadFastaMixin, RunExternalApplicationMixin):
     try:
       (match,) = re.finditer("Best-scoring ML tree written to:\s+(\S+)",
                              raxml_stdout)
-      return match.group(1) # the path to the output file
     except ValueError:
-      # There wasn't just one match so we can't trust the output
+      # Didn't get just one match, maybe this version of raxml is different
+      pass
+    else:
+      return match.group(1)
+
+    try:
+      # Different versions of raxml have different output :(
+      (match,) = re.finditer("Final tree written to:\s+(\S+)",
+                             raxml_stdout)
+    except ValueError:
+      # Didn't get one match again, assume something has gone wrong
       return None
+    else:
+      return match.group(1)
 
   def _run_fastml(self, fastml_executable, fastml_arguments, tree_filename, sequence_fasta_filename, output_directory):
     default_arguments = {

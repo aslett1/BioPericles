@@ -128,6 +128,13 @@ Overall execution time: 0.219131  secs or 0.000061 hours or 0.000003 days
     self.assertEqual(output, '/tmp/tmpaA9uJN/RAxML_bestTree.raxml_output')
 
     fake_stdout = """\
+Final tree written to:      /tmp/tmpaA9uJN/raxml_output
+"""
+
+    output = builder._get_raxml_tree_file(fake_stdout)
+    self.assertEqual(output, '/tmp/tmpaA9uJN/raxml_output')
+
+    fake_stdout = """\
 Oh dear
 
 Something went wrong
