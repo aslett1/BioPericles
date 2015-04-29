@@ -175,6 +175,14 @@ stderr:
                                                        fastml_arguments,
                                                        cwd=output_directory)
     if returncode != 0:
+      error_message = """\
+Problem running fastml on %s and %s.
+stdout:
+%s
+stderr:
+%s
+""" % (sequence_fasta_filename, tree_filename, stdout, stderr)
+      self.logger.error(error_message)
       raise FastmlException("Problem running fastml using %s and %s; some output in %s" %
                            (sequence_fasta_filename, tree_filename, output_directory),
                            returncode,
