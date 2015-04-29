@@ -36,16 +36,33 @@ class ClusterConsensus(object):
   def _calculate_consensus(self, sequence_generator):
     sequence_strings = self._get_all_sequences(sequence_generator)
     bases = []
-    for i,bases_in_ith_position in enumerate(zip(*sequence_strings)):
-      # bases_in_the_ith_position is a list of each of the bases at a particular
-      # position in each of the sequences (e.g. the first or second base in each
-      # position)
-      if i % 100000 == 0:
-        self.logger.info("Calculating the base in the %sth position" % i)
-      bases.append(self._compare_bases(bases_in_ith_position))
-    if len(bases) != self._get_length_of_longest(sequence_strings):
+    try:
+      for i,bases_in_ith_position in self._iterate_bases(sequence_strings):
+        # bases_in_the_ith_position is a list of each of the bases at a particular
+        # position in each of the sequences (e.g. the first or second base in each
+        # position)
+        if i % 100000 == 0:
+          self.logger.info("Calculating the base in the %sth position" % i)
+        bases.append(self._compare_bases(bases_in_ith_position))
+    except IndexError:
+      # self._iterate_bases assumes that all sequences are the same length as
+      # the first one.  If not the sequences cannot have been aligned properly
+      # so raise an error.
       raise ValueError("One sequence longer than the others, please make sure they are aligned")
     return "".join(bases)
+
+  def _iterate_bases(self, sequence_strings):
+    """Returns a generator of (i, bases)
+
+    For each sequence, this returns an array of the ith base.
+
+    Given:
+    sequence_strings = ['ABC', 'DEF']
+
+    Returns a generator for:
+    (0, ['A', 'D']), (1, ['B', 'E']), (2, ['C', 'F'])"""
+    length_of_sequences = len(sequence_strings[0])
+    return ((i, [sequence[i] for sequence in sequence_strings]) for i in xrange(length_of_sequences))
 
   def _compare_bases(self, bases):
     bases_set = set(bases)
