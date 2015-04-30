@@ -55,26 +55,27 @@ class SNPSitesReader(Reader):
 class SNPFeatureBuilder(LoadFastaMixin, RunExternalApplicationMixin):
   def __init__(self):
     self.sequences = {}
-    self.vcf = None
     self.vcf_output_file = None
-    self.temp_vcf_file = None
+    self.vcf_input_file = None
     self.feature_labels = [] # list of feature label objects
     self.features = {} # map of sample names to feature objects
 
-  def add_vcf(self):
+  def create_vcf_from_sequences(self):
     temp_fasta_file = tempfile.NamedTemporaryFile('w', delete=False)
-    self.temp_vcf_file = tempfile.NamedTemporaryFile('w', delete=False)
+    if self.vcf_input_file != None:
+      self.vcf_input_file.close()
+      os.remove(self.vcf_input_file.name)
+    self.vcf_input_file = tempfile.NamedTemporaryFile('w', delete=False)
     self._write_sequences(self.sequences.values(), temp_fasta_file)
     temp_fasta_file.close()
-    self.temp_vcf_file.close()
+    self.vcf_input_file.close()
 
     output_directory = tempfile.mkdtemp()
 
-    self._run_snp_sites('snp-sites', {'-o': self.temp_vcf_file.name},
+    self._run_snp_sites('snp-sites', {'-o': self.vcf_input_file.name},
                         temp_fasta_file.name, output_directory)
 
-    self.temp_vcf_file = open(self.temp_vcf_file.name, 'r')
-    self.vcf = SNPSitesReader(self.temp_vcf_file)
+    self.vcf_input_file = open(self.vcf_input_file.name, 'r')
 
     os.remove(temp_fasta_file.name)
     shutil.rmtree(output_directory)
@@ -82,8 +83,12 @@ class SNPFeatureBuilder(LoadFastaMixin, RunExternalApplicationMixin):
   def create_features(self):
     self.features = {}
     self.feature_labels = []
-    for record in self.vcf:
+    for record in self._get_records_from_vcf():
       self._add_record_to_features(record)
+
+  def _get_records_from_vcf(self):
+    self.vcf_input_file.seek(0)
+    return SNPSitesReader(self.vcf_input_file)
 
   def _add_record_to_features(self, record):
     feature_name = "SNP:{chromosome}:{position}".format(chromosome=record.CHROM,

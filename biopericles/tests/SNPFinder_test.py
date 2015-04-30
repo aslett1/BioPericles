@@ -81,11 +81,11 @@ class TestSNPSitesReader(unittest.TestCase):
 
 class TestSNPFeatureBuilder(unittest.TestCase):
   @patch("biopericles.SNPFinder.tempfile")
-  def test_add_vcf(self, temp_mock):
+  def test_create_vcf_from_sequences(self, temp_mock):
     builder = SNPFeatureBuilder()
 
     temp_fasta_file = tempfile.NamedTemporaryFile('w', delete=False)
-    temp_vcf_file =  tempfile.NamedTemporaryFile('w', delete=False)
+    temp_vcf_file = tempfile.NamedTemporaryFile('w', delete=False)
     random_folder = tempfile.mkdtemp()
 
     temp_mock.NamedTemporaryFile.side_effect = [temp_fasta_file, temp_vcf_file]
@@ -95,18 +95,52 @@ class TestSNPFeatureBuilder(unittest.TestCase):
     fasta_file = open(fasta_filename, 'r')
 
     builder.load_fasta_sequences(fasta_file)
-    builder.add_vcf()
-
-    self.assertIsInstance(builder.vcf, SNPSitesReader)
-    self.assertIsInstance(builder.vcf.next(), vcf.model._Record)
+    builder.create_vcf_from_sequences()
 
     self.assertFalse(os.path.isfile(temp_fasta_file.name))
     self.assertFalse(os.path.isdir(random_folder))
     self.assertTrue(os.path.isfile(temp_vcf_file.name))
 
+    builder.vcf_input_file.seek(0)
+    records = SNPSitesReader(builder.vcf_input_file)
+    number_of_records = sum((1 for record in records))
+
+    self.assertEqual(number_of_records, 5)
+
     fasta_file.close()
     temp_vcf_file.close()
     os.remove(temp_vcf_file.name)
+
+  @patch("biopericles.SNPFinder.os.remove")
+  def test_create_vcf_from_sequences_deletes_existing(self, remove_mock):
+    builder = SNPFeatureBuilder()
+    temp_vcf_file = tempfile.NamedTemporaryFile('w', delete=True)
+    builder.vcf_input_file = temp_vcf_file
+
+    fasta_filename = os.path.join(test_data(), 'file_with_SNPs.aln')
+    fasta_file = open(fasta_filename, 'r')
+
+    builder.load_fasta_sequences(fasta_file)
+    builder.create_vcf_from_sequences()
+
+    remove_mock.assert_any_call(temp_vcf_file.name)
+
+  def test_get_records_from_vcf(self):
+    builder = SNPFeatureBuilder()
+
+    fasta_filename = os.path.join(test_data(), 'file_with_SNPs.aln')
+    fasta_file = open(fasta_filename, 'r')
+
+    builder.load_fasta_sequences(fasta_file)
+    builder.create_vcf_from_sequences()
+
+    records = builder._get_records_from_vcf()
+    number_of_records = sum((1 for record in records))
+    self.assertEqual(number_of_records, 5)
+
+    records = builder._get_records_from_vcf()
+    number_of_records = sum((1 for record in records))
+    self.assertEqual(number_of_records, 5)
 
   def test_create_features(self):
     builder = SNPFeatureBuilder()
@@ -114,7 +148,7 @@ class TestSNPFeatureBuilder(unittest.TestCase):
     fake_vcf.append(FakeRecord(1,1,['.', '.', 'A']))
     fake_vcf.append(FakeRecord(1,2,['.', 'G', 'T']))
     fake_vcf.append(FakeRecord(1,3,['A', 'C', '.']))
-    builder.vcf = fake_vcf
+    builder._get_records_from_vcf=MagicMock(return_value=fake_vcf)
 
     builder.create_features()
 
@@ -125,7 +159,8 @@ class TestSNPFeatureBuilder(unittest.TestCase):
     self.assertEqual(builder.features['sample_2'], [1,1,0])
     self.assertEqual(builder.feature_labels, ['SNP:1:1', 'SNP:1:2', 'SNP:1:3'])
 
-    builder.vcf = [FakeRecord(2,1,['T', '.'])]
+    fake_vcf = [FakeRecord(2,1,['T', '.'])]
+    builder._get_records_from_vcf=MagicMock(return_value=fake_vcf)
 
     builder.create_features()
 
