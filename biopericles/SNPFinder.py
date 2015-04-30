@@ -60,6 +60,14 @@ class SNPFeatureBuilder(LoadFastaMixin, RunExternalApplicationMixin):
     self.feature_labels = [] # list of feature label objects
     self.features = {} # map of sample names to feature objects
 
+  def __del__(self):
+    try:
+      self.vcf_input_file.close()
+      os.remove(self.vcf_input_file.name)
+    except (OSError, AttributeError):
+      # The file didn't exist or had never been created
+      pass
+
   def create_vcf_from_sequences(self):
     temp_fasta_file = tempfile.NamedTemporaryFile('w', delete=False)
     if self.vcf_input_file != None:

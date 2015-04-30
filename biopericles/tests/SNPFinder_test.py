@@ -125,6 +125,25 @@ class TestSNPFeatureBuilder(unittest.TestCase):
 
     remove_mock.assert_any_call(temp_vcf_file.name)
 
+  @patch("biopericles.SNPFinder.os.remove")
+  def test_create_vcf_from_sequences_deletes_when_done(self, remove_mock):
+    builder = SNPFeatureBuilder()
+
+    fasta_filename = os.path.join(test_data(), 'file_with_SNPs.aln')
+    fasta_file = open(fasta_filename, 'r')
+
+    builder.load_fasta_sequences(fasta_file)
+    builder.create_vcf_from_sequences()
+
+    temp_vcf_filename = builder.vcf_input_file.name
+    del(builder)
+    remove_mock.assert_any_call(temp_vcf_filename)
+    try:
+      os.remove(temp_vcf_filename)
+    except OSError:
+      # Looks like it's already deleted
+      pass
+
   def test_get_records_from_vcf(self):
     builder = SNPFeatureBuilder()
 
