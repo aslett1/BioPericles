@@ -145,9 +145,9 @@ class TestSNPFeatureBuilder(unittest.TestCase):
   def test_create_features(self):
     builder = SNPFeatureBuilder()
     fake_vcf = []
-    fake_vcf.append(FakeRecord(1,1,['.', '.', 'A']))
-    fake_vcf.append(FakeRecord(1,2,['.', 'G', 'T']))
-    fake_vcf.append(FakeRecord(1,3,['A', 'C', '.']))
+    fake_vcf.append(FakeRecord(1,1,[None, None, 'A']))
+    fake_vcf.append(FakeRecord(1,2,[None, 'G', 'T']))
+    fake_vcf.append(FakeRecord(1,3,['A', 'C', None]))
     builder._get_records_from_vcf=MagicMock(return_value=fake_vcf)
 
     builder.create_features()
@@ -159,7 +159,7 @@ class TestSNPFeatureBuilder(unittest.TestCase):
     self.assertEqual(builder.features['sample_2'], [1,1,0])
     self.assertEqual(builder.feature_labels, ['SNP:1:1', 'SNP:1:2', 'SNP:1:3'])
 
-    fake_vcf = [FakeRecord(2,1,['T', '.'])]
+    fake_vcf = [FakeRecord(2,1,['T', None])]
     builder._get_records_from_vcf=MagicMock(return_value=fake_vcf)
 
     builder.create_features()
@@ -172,7 +172,7 @@ class TestSNPFeatureBuilder(unittest.TestCase):
   def test_add_record_to_features(self):
     builder = SNPFeatureBuilder()
 
-    record = FakeRecord(1,1,['.', '.', 'A'])
+    record = FakeRecord(1,1,[None, None, 'A'])
     builder._add_record_to_features(record)
 
     self.assertItemsEqual(builder.features.keys(), ['sample_0', 'sample_1',
@@ -182,7 +182,7 @@ class TestSNPFeatureBuilder(unittest.TestCase):
     self.assertEqual(builder.features['sample_2'], [1])
     self.assertEqual(builder.feature_labels, ['SNP:1:1'])
 
-    record = FakeRecord(1,2,['.', 'G', 'T'])
+    record = FakeRecord(1,2,[None, 'G', 'T'])
     builder._add_record_to_features(record)
 
     self.assertItemsEqual(builder.features.keys(), ['sample_0', 'sample_1',
@@ -192,7 +192,7 @@ class TestSNPFeatureBuilder(unittest.TestCase):
     self.assertEqual(builder.features['sample_2'], [1,1])
     self.assertEqual(builder.feature_labels, ['SNP:1:1', 'SNP:1:2'])
 
-    record = FakeRecord(1,3,['A', 'C', '.'])
+    record = FakeRecord(1,3,['A', 'C', None])
     record.samples[1].data.__delattr__('AB') # One of the samples is missing an 'AB'
     builder._add_record_to_features(record)
 

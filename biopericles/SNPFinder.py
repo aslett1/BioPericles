@@ -97,7 +97,7 @@ class SNPFeatureBuilder(LoadFastaMixin, RunExternalApplicationMixin):
     try:
       for sample in record.samples:
         sample_name = sample.sample
-        sample_value = 0 if sample.data.AB == '.' else 1
+        sample_value = 0 if sample.data.AB == None else 1
         feature_updates.append((sample_name, sample_value))
     except AttributeError:
       # One or more of the samples didn't have alternative base ('AB') data so
