@@ -26,9 +26,6 @@ Takes a list of multifastas, one per cluster.  For each multifasta it calculates
 the bases which are consistent throughout the cluster and marks those that are 
 not with an 'N'.
 
-NB This script currently requires at least ten times as much memory as the size
-of the biggest input file passed to it.
-
 ::
 
   export data=biopericles/tests/data
