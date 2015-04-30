@@ -15,6 +15,10 @@ def test_data():
   return os.path.join(this_dir, 'data')
 
 class FakeRecord(object):
+  """Creates 'Records' similar to those parsed from vcf files
+
+  Each vcf file is normally parsed into records, one per SNP.  This object is
+  similar enough for tests"""
   def __init__(self, chromosome, position, calls):
     self.CHROM = chromosome
     self.POS = position
@@ -22,11 +26,13 @@ class FakeRecord(object):
     self.samples = [FakeCall(*args) for args in zip(sample_names, calls)]
 
 class FakeCall(object):
+  """Records have a list of 'Calls' for each sample"""
   def __init__(self, sample, call):
     self.data = FakeDatum(call)
     self.sample = sample
 
 class FakeDatum(object):
+  """The calls have values, in this case we're only mocking the AB value"""
   def __init__(self, datum):
     self.AB = datum
 
@@ -105,8 +111,39 @@ class TestSNPFeatureBuilder(unittest.TestCase):
   def test_create_features(self):
     pass
 
-  def test_update_features(self):
-    pass
+  def test_add_record_to_features(self):
+    builder = SNPFeatureBuilder()
+
+    record = FakeRecord(1,1,['.', '.', 'A'])
+    builder._add_record_to_features(record)
+
+    self.assertItemsEqual(builder.features.keys(), ['sample_0', 'sample_1',
+                                                    'sample_2'])
+    self.assertEqual(builder.features['sample_0'], [0])
+    self.assertEqual(builder.features['sample_1'], [0])
+    self.assertEqual(builder.features['sample_2'], [1])
+    self.assertEqual(builder.feature_labels, ['SNP:1:1'])
+
+    record = FakeRecord(1,2,['.', 'G', 'T'])
+    builder._add_record_to_features(record)
+
+    self.assertItemsEqual(builder.features.keys(), ['sample_0', 'sample_1',
+                                                    'sample_2'])
+    self.assertEqual(builder.features['sample_0'], [0,0])
+    self.assertEqual(builder.features['sample_1'], [0,1])
+    self.assertEqual(builder.features['sample_2'], [1,1])
+    self.assertEqual(builder.feature_labels, ['SNP:1:1', 'SNP:1:2'])
+
+    record = FakeRecord(1,3,['A', 'C', '.'])
+    record.samples[1].data.__delattr__('AB') # One of the samples is missing an 'AB'
+    builder._add_record_to_features(record)
+
+    self.assertItemsEqual(builder.features.keys(), ['sample_0', 'sample_1',
+                                                    'sample_2'])
+    self.assertEqual(builder.features['sample_0'], [0,0])
+    self.assertEqual(builder.features['sample_1'], [0,1])
+    self.assertEqual(builder.features['sample_2'], [1,1])
+    self.assertEqual(builder.feature_labels, ['SNP:1:1', 'SNP:1:2'])
 
   def test_write_vcf(self):
     pass

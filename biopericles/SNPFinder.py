@@ -82,11 +82,24 @@ class SNPFeatureBuilder(LoadFastaMixin, RunExternalApplicationMixin):
   def create_features(self):
     pass
 
-  def _update_features(self, record):
-    pass
+  def _add_record_to_features(self, record):
+    feature_name = "SNP:{chromosome}:{position}".format(chromosome=record.CHROM,
+                                                        position=record.POS)
+    feature_updates = []
+    try:
+      for sample in record.samples:
+        sample_name = sample.sample
+        sample_value = 0 if sample.data.AB == '.' else 1
+        feature_updates.append((sample_name, sample_value))
+    except AttributeError:
+      # One or more of the samples didn't have alternative base ('AB') data so
+      # we should ignore this record without updating it.
+      return
 
-  def _update_feature_labels(self, record):
-    pass
+    for sample_name, sample_value in feature_updates:
+      self.features.setdefault(sample_name, []).append(sample_value)
+
+    self.feature_labels.append(feature_name)
 
   def write_vcf(self):
     pass
