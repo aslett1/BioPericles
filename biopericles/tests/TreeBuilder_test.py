@@ -1,3 +1,4 @@
+import logging
 import os
 import random
 import re
@@ -10,6 +11,8 @@ from mock import patch, MagicMock
 from StringIO import StringIO
 
 from biopericles.TreeBuilder import TreeBuilder, RaxmlException, FastmlException
+
+logging.basicConfig(level=logging.ERROR)
 
 def test_data():
   this_file = os.path.abspath(__file__)

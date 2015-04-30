@@ -45,7 +45,6 @@ Raxml stderr:
       self.logger.error(error_message)
       raise RaxmlException("Could not parse where raxml stored output tree",
                            0, raxml_stdout, raxml_stderr)
-    self.logger.info("raxml output tree to %s" % raxml_tree_filename)
     (tree,) = Bio.Phylo.parse(raxml_tree_filename, 'newick')
     tree.root_at_midpoint()
     self.tree = tree

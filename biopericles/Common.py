@@ -1,4 +1,5 @@
 import Bio.SeqIO
+import logging
 import subprocess
 
 from collections import OrderedDict
@@ -37,6 +38,7 @@ class LoadFastaMixin(object):
 class RunExternalApplicationMixin(object):
   def _run_application(self, executable, default_arguments,
                        additional_arguments, **kwargs):
+    logger = logging.getLogger(__name__)
     arguments_dict = self._merge_commandline_arguments(default_arguments,
                                                        additional_arguments)
     arguments_list = self._build_commandline_arguments(arguments_dict)
@@ -45,6 +47,8 @@ class RunExternalApplicationMixin(object):
                                stderr=subprocess.PIPE,
                                **kwargs
                               )
+    logger.debug("Called external application '%s'" % " ".join([executable] +
+                                                               arguments_list))
     stdout, stderr = process.communicate()
     return (stdout, stderr, process.returncode)
 
