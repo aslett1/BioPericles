@@ -109,9 +109,6 @@ class SNPFeatureBuilder(LoadFastaMixin, RunExternalApplicationMixin):
 
     self.feature_labels.append(feature_name)
 
-  def write_vcf(self):
-    pass
-
   def _write_sequences(self, sequences, output_file):
     Bio.SeqIO.write(sequences, output_file, 'fasta')
 

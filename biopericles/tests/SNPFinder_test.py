@@ -203,9 +203,6 @@ class TestSNPFeatureBuilder(unittest.TestCase):
     self.assertEqual(builder.features['sample_2'], [1,1])
     self.assertEqual(builder.feature_labels, ['SNP:1:1', 'SNP:1:2'])
 
-  def test_write_vcf(self):
-    pass
-
   def test_run_snp_sites(self):
     builder = SNPFeatureBuilder()
 
