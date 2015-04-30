@@ -80,7 +80,10 @@ class SNPFeatureBuilder(LoadFastaMixin, RunExternalApplicationMixin):
     shutil.rmtree(output_directory)
 
   def create_features(self):
-    pass
+    self.features = {}
+    self.feature_labels = []
+    for record in self.vcf:
+      self._add_record_to_features(record)
 
   def _add_record_to_features(self, record):
     feature_name = "SNP:{chromosome}:{position}".format(chromosome=record.CHROM,

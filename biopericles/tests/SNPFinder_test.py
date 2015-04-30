@@ -109,7 +109,30 @@ class TestSNPFeatureBuilder(unittest.TestCase):
     os.remove(temp_vcf_file.name)
 
   def test_create_features(self):
-    pass
+    builder = SNPFeatureBuilder()
+    fake_vcf = []
+    fake_vcf.append(FakeRecord(1,1,['.', '.', 'A']))
+    fake_vcf.append(FakeRecord(1,2,['.', 'G', 'T']))
+    fake_vcf.append(FakeRecord(1,3,['A', 'C', '.']))
+    builder.vcf = fake_vcf
+
+    builder.create_features()
+
+    self.assertItemsEqual(builder.features.keys(), ['sample_0', 'sample_1',
+                                                    'sample_2'])
+    self.assertEqual(builder.features['sample_0'], [0,0,1])
+    self.assertEqual(builder.features['sample_1'], [0,1,1])
+    self.assertEqual(builder.features['sample_2'], [1,1,0])
+    self.assertEqual(builder.feature_labels, ['SNP:1:1', 'SNP:1:2', 'SNP:1:3'])
+
+    builder.vcf = [FakeRecord(2,1,['T', '.'])]
+
+    builder.create_features()
+
+    self.assertItemsEqual(builder.features.keys(), ['sample_0', 'sample_1'])
+    self.assertEqual(builder.features['sample_0'], [1])
+    self.assertEqual(builder.features['sample_1'], [0])
+    self.assertEqual(builder.feature_labels, ['SNP:2:1'])
 
   def test_add_record_to_features(self):
     builder = SNPFeatureBuilder()
