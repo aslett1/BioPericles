@@ -28,6 +28,10 @@ if __name__ == '__main__':
   parser.description = "Takes a fasta, outputs a newick tree and fasta with ancestor sequences"
   parser.add_argument('multifasta', type=FileType(mode='r'),
                       help="Multifasta with aligned sequences")
+  parser.add_argument('--raxml', '-r', type=str, default='raxmlHPC',
+                      help="Path to raxml executable (defaults to raxmlHPC)")
+  parser.add_argument('--fastml', '-f', type=str, default='fastml',
+                      help="Path to fastml executable (defaults to fastml)")
   parser.add_argument('--sequences-output', '-s', type=FileType(mode='w'),
                       nargs='?',
                       help="Output file for sequence data (defaults to ancestor_sequences.mfa)")
@@ -49,6 +53,10 @@ if __name__ == '__main__':
   builder = TreeBuilder()
   builder.sequences_output_file = sequences_output
   builder.tree_output_file = tree_output
+  logger.info("Using %s and %s to build the ancestral nodes" % (args.raxml,
+                                                                args.fastml))
+  builder.raxml_executable = args.raxml
+  builder.fastml_executable = args.fastml
 
   builder.load_fasta_sequences(args.multifasta)
   logger.info("Building a tree from %s" % args.multifasta.name)

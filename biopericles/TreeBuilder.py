@@ -22,6 +22,8 @@ class TreeBuilder(LoadFastaMixin, RunExternalApplicationMixin):
     self.tree = None # a BioPython Phylo tree
     self.sequences_output_file = None
     self.tree_output_file = None
+    self.raxml_executable = 'raxmlHPC'
+    self.fastml_executable = 'fastml'
     self.logger = logging.getLogger(__name__)
 
   def build_tree(self):
@@ -30,7 +32,8 @@ class TreeBuilder(LoadFastaMixin, RunExternalApplicationMixin):
     phylip.close()
     output_directory = tempfile.mkdtemp()
     self.logger.info("Created output directory %s for raxml" % output_directory)
-    raxml_stdout, raxml_stderr = self._run_raxml('raxmlHPC', {}, phylip.name,
+    raxml_stdout, raxml_stderr = self._run_raxml(self.raxml_executable, {},
+                                                 phylip.name,
                                                  output_directory)
     raxml_tree_filename = self._get_raxml_tree_file(raxml_stdout)
     self.logger.info("Wrote raxml tree file to %s" % raxml_tree_filename)
@@ -72,7 +75,7 @@ Raxml stderr:
     temporary_sequence_file.close()
     temporary_tree_file.close()
 
-    self._run_fastml('fastml', {},
+    self._run_fastml(self.fastml_executable, {},
                      temporary_tree_file.name,
                      temporary_sequence_file.name,
                      output_directory)
