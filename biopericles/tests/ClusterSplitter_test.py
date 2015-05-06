@@ -148,9 +148,9 @@ class TestClusterSplitter(unittest.TestCase):
     for cluster, file_handler in splitter.cluster_output_files.items():
       self.assertEqual(file_handler, a_file, "File handler for %s isn't a file handler" % cluster)
 
-    open_mock.assert_any_call('/home/output/cluster_cluster_A_multifasta.aln', 'w')
-    open_mock.assert_any_call('/home/output/cluster_cluster_B_multifasta.aln', 'w')
-    open_mock.assert_any_call('/home/output/cluster_cluster_C_multifasta.aln', 'w')
+    open_mock.assert_any_call('/home/output/cluster_cluster_A.aln', 'w')
+    open_mock.assert_any_call('/home/output/cluster_cluster_B.aln', 'w')
+    open_mock.assert_any_call('/home/output/cluster_cluster_C.aln', 'w')
 
     splitter.cluster_output_files = {}
 

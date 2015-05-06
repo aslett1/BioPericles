@@ -51,7 +51,7 @@ class ClusterSplitter(object):
 
   def create_cluster_output_files(self, clusters):
     def create_file(cluster):
-      filename = "cluster_{cluster}_multifasta.aln".format(cluster=cluster)
+      filename = "cluster_{cluster}.aln".format(cluster=cluster)
       path = os.path.join(self.output_directory, filename)
       if os.path.isfile(path):
         message = "The output file '%s' already exists.  Please specify another output directory" % path
