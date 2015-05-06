@@ -1,15 +1,69 @@
 import Bio.SeqIO
 import logging
+import os
+import shutil
 import subprocess
+import tempfile
 
+from contextlib import contextmanager
 from collections import OrderedDict
 from copy import copy
+
+logger = logging.getLogger(__name__)
 
 def try_and_get_filename(filehandle):
   try:
     return filehandle.name
   except AttributeError:
     return "ANONYMOUS_FILE"
+
+@contextmanager
+def context_aware_tempfile(*args, **kwargs):
+  """Creates a tempfile inside a context which is deleted at the end of the
+  context
+
+  Takes the same parameters as tempfile.NamedTemporary file but remembers to
+  delete the file at the end of the context"""
+  temporary_file = tempfile.NamedTemporaryFile(*args, **kwargs)
+  temporary_filename = temporary_file.name
+  logger.debug("Created %s" % temporary_filename)
+  def delete_file():
+    try:
+      temporary_file.close()
+      os.remove(temporary_filename)
+      logger.debug("Deleted %s" % temporary_filename)
+    except OSError:
+      # might have already been deleted
+      logger.debug("Couldn't delete %s" % temporary_filename)
+  try:
+    yield temporary_file
+  except:
+    delete_file()
+    raise
+  finally:
+    delete_file()
+
+@contextmanager
+def context_aware_tempdir(*args, **kwargs):
+  """Creates a temporary folder inside a context which is deleted at the 
+  end of the context
+
+  Takes the same parameters as tempfile.mkdtemp but remembers to
+  delete the folder at the end of the context"""
+  temporary_folder = tempfile.mkdtemp(*args, **kwargs)
+  def delete_folder():
+    try:
+      shutil.rmtree(temporary_folder)
+    except OSError as e:
+      # might have already been deleted
+      pass
+  try:
+    yield temporary_folder
+  except:
+    delete_folder()
+    raise
+  finally:
+    delete_folder()
 
 class ExternalApplicationException(Exception):
   def __init__(self, message, returncode, stdout, stderr):
@@ -21,10 +75,10 @@ class ExternalApplicationException(Exception):
 class LoadFastaMixin(object):
   def load_fasta_sequences(self, fasta_file):
     """Load sequences from a fasta_file into a dictionary of {sequence_name: SeqIO object}
-  
+
     Takes a filehandle to a aligned multifasta
     """
-  
+
     list_of_sequences = Bio.SeqIO.parse(fasta_file, 'fasta')
     self.sequences = OrderedDict()
     for seq in list_of_sequences:
@@ -38,7 +92,6 @@ class LoadFastaMixin(object):
 class RunExternalApplicationMixin(object):
   def _run_application(self, executable, default_arguments,
                        additional_arguments, **kwargs):
-    logger = logging.getLogger(__name__)
     arguments_dict = self._merge_commandline_arguments(default_arguments,
                                                        additional_arguments)
     arguments_list = self._build_commandline_arguments(arguments_dict)

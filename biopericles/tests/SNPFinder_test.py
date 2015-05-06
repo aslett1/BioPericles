@@ -4,10 +4,12 @@ import tempfile
 import unittest
 import vcf
 
+from contextlib import contextmanager
 from mock import MagicMock, patch
 from StringIO import StringIO
 
 from biopericles.SNPFinder import SNPFeatureBuilder, SNPSitesReader
+from biopericles.Common import context_aware_tempfile, context_aware_tempdir
 
 def test_data():
   this_file = os.path.abspath(__file__)
@@ -79,17 +81,47 @@ class TestSNPSitesReader(unittest.TestCase):
 
     self.assertItemsEqual(samples_with_alternative_bases, expected)
 
+def create_context_aware_tempfile_mock(filenames):
+  """Creates something like a context_aware_tempfile but remembers created files
+
+  context_aware_tempfiles are deleted at the end of the context.  This does
+  exactly the same thing but also populates the filenames array with details of
+  the files created so that you can check they have been deleted"""
+  @contextmanager
+  def context_aware_tempfile_mock(*args, **kwargs):
+    with context_aware_tempfile(*args, **kwargs) as tempfile:
+      filenames.append(tempfile.name)
+      yield tempfile
+  return context_aware_tempfile_mock
+
+def create_context_aware_tempdir_mock(folder_names):
+  """Creates something like a context_aware_tempfile but remembers created files
+
+  context_aware_tempfiles are deleted at the end of the context.  This does
+  exactly the same thing but also populates the filenames array with details of
+  the files created so that you can check they have been deleted"""
+  @contextmanager
+  def context_aware_tempdir_mock(*args, **kwargs):
+    with context_aware_tempdir(*args, **kwargs) as tempdir:
+      folder_names.append(tempdir)
+      yield tempdir
+  return context_aware_tempdir_mock
+
 class TestSNPFeatureBuilder(unittest.TestCase):
+  @patch("biopericles.SNPFinder.context_aware_tempdir")
+  @patch("biopericles.SNPFinder.context_aware_tempfile")
   @patch("biopericles.SNPFinder.tempfile")
-  def test_create_vcf_from_sequences(self, temp_mock):
+  def test_create_vcf_from_sequences(self, temp_mock, ctx_tempfile_mock,
+                                     ctx_tempdir_mock):
     builder = SNPFeatureBuilder()
 
-    temp_fasta_file = tempfile.NamedTemporaryFile('w', delete=False)
     temp_vcf_file = tempfile.NamedTemporaryFile('w', delete=False)
-    random_folder = tempfile.mkdtemp()
 
-    temp_mock.NamedTemporaryFile.side_effect = [temp_fasta_file, temp_vcf_file]
-    temp_mock.mkdtemp.return_value = random_folder
+    temp_files = []
+    temp_folders = []
+    ctx_tempfile_mock.side_effect = create_context_aware_tempfile_mock(temp_files)
+    ctx_tempdir_mock.side_effect = create_context_aware_tempdir_mock(temp_folders)
+    temp_mock.NamedTemporaryFile.return_value = temp_vcf_file
 
     fasta_filename = os.path.join(test_data(), 'file_with_SNPs.aln')
     fasta_file = open(fasta_filename, 'r')
@@ -97,8 +129,10 @@ class TestSNPFeatureBuilder(unittest.TestCase):
     builder.load_fasta_sequences(fasta_file)
     builder.create_vcf_from_sequences()
 
-    self.assertFalse(os.path.isfile(temp_fasta_file.name))
-    self.assertFalse(os.path.isdir(random_folder))
+    self.assertEqual(len(temp_files), 1)
+    self.assertFalse(os.path.isfile(temp_files[0]))
+    self.assertEqual(len(temp_folders), 1)
+    self.assertFalse(os.path.isdir(temp_folders[0]))
     self.assertTrue(os.path.isfile(temp_vcf_file.name))
 
     builder.vcf_input_file.seek(0)
@@ -111,23 +145,25 @@ class TestSNPFeatureBuilder(unittest.TestCase):
     temp_vcf_file.close()
     os.remove(temp_vcf_file.name)
 
-  @patch("biopericles.SNPFinder.os.remove")
-  def test_create_vcf_from_sequences_deletes_existing(self, remove_mock):
+  @patch("biopericles.SNPFinder.os")
+  def test_create_vcf_from_sequences_deletes_existing(self, os_mock):
     builder = SNPFeatureBuilder()
-    temp_vcf_file = tempfile.NamedTemporaryFile('w', delete=True)
-    builder.vcf_input_file = temp_vcf_file
+    os_mock.remove.side_effect = os.remove
+    with context_aware_tempfile('w', delete=False) as temp_vcf_file:
+      builder.vcf_input_file = temp_vcf_file
 
-    fasta_filename = os.path.join(test_data(), 'file_with_SNPs.aln')
-    fasta_file = open(fasta_filename, 'r')
+      fasta_filename = os.path.join(test_data(), 'file_with_SNPs.aln')
+      fasta_file = open(fasta_filename, 'r')
 
-    builder.load_fasta_sequences(fasta_file)
-    builder.create_vcf_from_sequences()
+      builder.load_fasta_sequences(fasta_file)
+      builder.create_vcf_from_sequences()
 
-    remove_mock.assert_any_call(temp_vcf_file.name)
+      os_mock.remove.assert_any_call(temp_vcf_file.name)
 
-  @patch("biopericles.SNPFinder.os.remove")
-  def test_create_vcf_from_sequences_deletes_when_done(self, remove_mock):
+  @patch("biopericles.SNPFinder.os")
+  def test_create_vcf_from_sequences_deletes_when_done(self, os_mock):
     builder = SNPFeatureBuilder()
+    os_mock.remove.side_effect = os.remove
 
     fasta_filename = os.path.join(test_data(), 'file_with_SNPs.aln')
     fasta_file = open(fasta_filename, 'r')
@@ -137,7 +173,7 @@ class TestSNPFeatureBuilder(unittest.TestCase):
 
     temp_vcf_filename = builder.vcf_input_file.name
     del(builder)
-    remove_mock.assert_any_call(temp_vcf_filename)
+    os_mock.remove.assert_any_call(temp_vcf_filename)
     try:
       os.remove(temp_vcf_filename)
     except OSError:
@@ -226,13 +262,11 @@ class TestSNPFeatureBuilder(unittest.TestCase):
     builder = SNPFeatureBuilder()
 
     fasta_filename = os.path.join(test_data(), 'file_with_SNPs.aln')
-    output_directory = tempfile.mkdtemp()
 
-    stdout, stderr = builder._run_snp_sites('snp-sites', {},
-                                           fasta_filename,
-                                           output_directory)
+    with context_aware_tempdir() as output_directory:
+      stdout, stderr = builder._run_snp_sites('snp-sites', {},
+                                             fasta_filename,
+                                             output_directory)
 
-    expected_output_filename = os.path.join(output_directory, 'all_snps.vcf')
-    self.assertTrue(os.path.isfile(expected_output_filename))
-
-    shutil.rmtree(output_directory)
+      expected_output_filename = os.path.join(output_directory, 'all_snps.vcf')
+      self.assertTrue(os.path.isfile(expected_output_filename))

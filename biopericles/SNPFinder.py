@@ -7,7 +7,8 @@ import tempfile
 from vcf import Reader
 from biopericles.Common import LoadFastaMixin, \
                                RunExternalApplicationMixin, \
-                               ExternalApplicationException
+                               ExternalApplicationException, \
+                               context_aware_tempfile, context_aware_tempdir
 
 class SNPSitesException(ExternalApplicationException):
   pass
@@ -69,24 +70,20 @@ class SNPFeatureBuilder(LoadFastaMixin, RunExternalApplicationMixin):
       pass
 
   def create_vcf_from_sequences(self):
-    temp_fasta_file = tempfile.NamedTemporaryFile('w', delete=False)
-    if self.vcf_input_file != None:
+    with context_aware_tempfile('w', delete=False) as temp_fasta_file:
+      if self.vcf_input_file != None:
+        self.vcf_input_file.close()
+        os.remove(self.vcf_input_file.name)
+      self.vcf_input_file = tempfile.NamedTemporaryFile('w', delete=False)
+      self._write_sequences(self.sequences.values(), temp_fasta_file)
+      temp_fasta_file.close()
       self.vcf_input_file.close()
-      os.remove(self.vcf_input_file.name)
-    self.vcf_input_file = tempfile.NamedTemporaryFile('w', delete=False)
-    self._write_sequences(self.sequences.values(), temp_fasta_file)
-    temp_fasta_file.close()
-    self.vcf_input_file.close()
 
-    output_directory = tempfile.mkdtemp()
+      with context_aware_tempdir() as output_directory:
+        self._run_snp_sites('snp-sites', {'-o': self.vcf_input_file.name},
+                            temp_fasta_file.name, output_directory)
 
-    self._run_snp_sites('snp-sites', {'-o': self.vcf_input_file.name},
-                        temp_fasta_file.name, output_directory)
-
-    self.vcf_input_file = open(self.vcf_input_file.name, 'r')
-
-    os.remove(temp_fasta_file.name)
-    shutil.rmtree(output_directory)
+      self.vcf_input_file = open(self.vcf_input_file.name, 'r')
 
   def create_features(self):
     self.features = {}
