@@ -103,6 +103,8 @@ class RunExternalApplicationMixin(object):
     logger.debug("Called external application '%s'" % " ".join([executable] +
                                                                arguments_list))
     stdout, stderr = process.communicate()
+    logger.debug("%s returned with status '%s'" % (executable,
+                                                   process.returncode))
     return (stdout, stderr, process.returncode)
 
   def _merge_commandline_arguments(self, default_arguments, new_arguments):

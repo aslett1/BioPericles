@@ -82,8 +82,11 @@ Raxml stderr:
 
     output_sequences_filename = os.path.join(output_directory,
                                              'all_nodes.mfa')
+    self.logger.info("Wrote ancestral sequences to %s" % output_sequences_filename)
+
     output_tree_filename = os.path.join(output_directory,
                                         'all_nodes.newick')
+    self.logger.info("Wrote ancestral tree to %s" % output_tree_filename)
 
     with open(output_sequences_filename, 'r') as output_sequences_file:
       self.load_fasta_sequences(output_sequences_file)
