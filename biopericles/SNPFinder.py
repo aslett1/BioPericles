@@ -60,6 +60,7 @@ class SNPFeatureBuilder(LoadFastaMixin, RunExternalApplicationMixin):
     self.vcf_input_file = None
     self.feature_labels = [] # list of feature label objects
     self.features = {} # map of sample names to feature objects
+    self.snp_sites_exec = "snp-sites"
 
   def __del__(self):
     try:
@@ -80,7 +81,7 @@ class SNPFeatureBuilder(LoadFastaMixin, RunExternalApplicationMixin):
       self.vcf_input_file.close()
 
       with context_aware_tempdir() as output_directory:
-        self._run_snp_sites('snp-sites', {'-o': self.vcf_input_file.name},
+        self._run_snp_sites(self.snp_sites_exec, {'-o': self.vcf_input_file.name},
                             temp_fasta_file.name, output_directory)
 
       self.vcf_input_file = open(self.vcf_input_file.name, 'r')

@@ -23,6 +23,8 @@ if __name__ == '__main__':
                       help="Multifasta with aligned sequences")
   parser.add_argument('--features-output', '-o', dest="output_file", type=str,
                       default='-', help="Output file (defaults to stdout)")
+  parser.add_argument('--snp-sites-executable', '-s', dest="snp_sites_exec", type=str,
+                      default='snp-sites', help="snp-sites executable (defaults to snp-sites)")
 
   args = parser.parse_args()
 
@@ -32,6 +34,7 @@ if __name__ == '__main__':
     output_file = open(args.output_file, 'w')
 
   builder = SNPFeatureBuilder()
+  builder.snp_sites_exec = args.snp_sites_exec
   builder.load_fasta_sequences(args.multifasta)
   builder.create_vcf_from_sequences()
   builder.create_features()
