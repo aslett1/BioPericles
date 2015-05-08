@@ -1,4 +1,5 @@
 import Bio.SeqIO
+import logging
 import os
 import re
 import shutil
@@ -61,6 +62,7 @@ class SNPFeatureBuilder(LoadFastaMixin, RunExternalApplicationMixin):
     self.feature_labels = [] # list of feature label objects
     self.features = {} # map of sample names to feature objects
     self.snp_sites_exec = "snp-sites"
+    self.logger = logging.getLogger(__name__)
 
   def __del__(self):
     try:
@@ -76,11 +78,13 @@ class SNPFeatureBuilder(LoadFastaMixin, RunExternalApplicationMixin):
         self.vcf_input_file.close()
         os.remove(self.vcf_input_file.name)
       self.vcf_input_file = tempfile.NamedTemporaryFile('w', delete=False)
+      self.logger.info("Writing sequences to %s" % temp_fasta_file.name)
       self._write_sequences(self.sequences.values(), temp_fasta_file)
       temp_fasta_file.close()
       self.vcf_input_file.close()
 
       with context_aware_tempdir() as output_directory:
+        self.logger.info("Writing snps to %s" % self.vcf_input_file.name)
         self._run_snp_sites(self.snp_sites_exec, {'-o': self.vcf_input_file.name},
                             temp_fasta_file.name, output_directory)
 
@@ -89,16 +93,19 @@ class SNPFeatureBuilder(LoadFastaMixin, RunExternalApplicationMixin):
   def create_features(self):
     self.features = {}
     self.feature_labels = []
+    self.logger.info("Creating features")
     for record in self._get_records_from_vcf():
       self._add_record_to_features(record)
 
   def _get_records_from_vcf(self):
     self.vcf_input_file.seek(0)
+    self.logger.info("Reading VCF records from %s" % self.vcf_input_file.name)
     return SNPSitesReader(self.vcf_input_file)
 
   def _add_record_to_features(self, record):
     feature_name = "SNP:{chromosome}:{position}".format(chromosome=record.CHROM,
                                                         position=record.POS)
+    self.logger.debug("Adding feature '%s'" % feature_name)
     feature_updates = []
     try:
       for sample in record.samples:
