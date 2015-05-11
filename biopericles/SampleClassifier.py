@@ -1,3 +1,6 @@
+import csv
+import logging
+
 class SampleClassifier(object):
   def classify(self, features, feature_labels):
     """Takes a sample and classifies it"""
@@ -18,6 +21,7 @@ class BuildSampleClassifier(object):
     self.relevant_feature_labels = []
     self.training_data = None
     self.test_data = None
+    self.logger = logging.getLogger(__name__)
 
   def train(self):
     """Trains a classifier using the training data"""
@@ -38,7 +42,16 @@ class BuildSampleClassifier(object):
     Some files have more features others don't.  This is a useful
     pre-computation step which extracts the feature labels used in one file
     which can be used to filter the features in another"""
-    pass
+    feature_file.seek(0)
+    features_line = csv.reader(feature_file).next()
+    if features_line[0] != 'Features':
+      try:
+        filename = feature_file.name
+      except AttributeError:
+        filename = 'unknown file'
+      raise ValueError("Issue parsing '%s', expected first element to be 'Features'" % filename)
+    feature_labels = features_line[1:]
+    return feature_labels
 
   def load_data(self, features_file, sample_to_cluster_map, relevant_features):
     """Loads features from a CSV and labels the samples by cluster
