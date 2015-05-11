@@ -91,9 +91,11 @@ class BuildSampleClassifier(object):
       raise ValueError("Issue parsing '%s', expected features to be 0 or 1" % filename)
     return sample_names, features
 
-  def _label_data(self, features, sample_to_cluster_map):
+  def _get_cluster_labels_for_samples(self, sample_names, sample_to_cluster_map):
     """Takes samples and a mapping and labels the samples"""
-    pass
+    sample_names = sample_names.copy()
+    sample_to_cluster = np.vectorize(sample_to_cluster_map.get, otypes=[object])
+    return sample_to_cluster(sample_names)
 
   def _split_data(self, data, test_split=0.3):
     """Splits data into training and test sets

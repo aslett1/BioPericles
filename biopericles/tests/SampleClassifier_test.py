@@ -82,3 +82,27 @@ sample_1,1,2
 """
     feature_file = StringIO(file_contents)
     self.assertRaises(ValueError, feature_builder._extract_features, feature_file)
+
+  def test_get_cluster_labels_for_samples(self):
+    feature_builder = BuildSampleClassifier()
+
+    sample_to_cluster_map = {
+      'sample_1': 'cluster_A',
+      'sample_2': 'cluster_A',
+      'sample_3': 'cluster_A',
+      'sample_4': 'cluster_B',
+    }
+
+    sample_names = np.array(['sample_1', 'sample_4', 'sample_3'])
+    expected = np.array(['cluster_A', 'cluster_B', 'cluster_A'])
+
+    clusters = feature_builder._get_cluster_labels_for_samples(sample_names,
+                                                               sample_to_cluster_map)
+    assert_array_equal(clusters, expected)
+
+    sample_names = np.array(['sample_1', 'unknown_sample', 'sample_3'])
+    expected = np.array(['cluster_A', None, 'cluster_A'])
+
+    clusters = feature_builder._get_cluster_labels_for_samples(sample_names,
+                                                               sample_to_cluster_map)
+    assert_array_equal(clusters, expected)
