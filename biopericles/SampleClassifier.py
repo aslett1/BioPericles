@@ -60,6 +60,7 @@ class BuildSampleClassifier(object):
     # load the data from a file of features
     # keep a copy of the feature labels
     # remove the irrelevant features
+    # remove unlabeled data (and warn the user)
     # split the data into training and test sets
     pass
 
@@ -96,6 +97,13 @@ class BuildSampleClassifier(object):
     sample_names = sample_names.copy()
     sample_to_cluster = np.vectorize(sample_to_cluster_map.get, otypes=[object])
     return sample_to_cluster(sample_names)
+
+  def _only_labeled_data(self, cluster_labels, features):
+    is_not_none = np.vectorize(lambda v: v is not None)
+    known_labels = is_not_none(cluster_labels)
+    clusters_with_labels = cluster_labels[known_labels]
+    features_with_labels = features[known_labels]
+    return clusters_with_labels, features_with_labels
 
   def _split_data(self, data, test_split=0.3):
     """Splits data into training and test sets

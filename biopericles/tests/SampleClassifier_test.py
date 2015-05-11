@@ -106,3 +106,17 @@ sample_1,1,2
     clusters = feature_builder._get_cluster_labels_for_samples(sample_names,
                                                                sample_to_cluster_map)
     assert_array_equal(clusters, expected)
+
+  def test_only_labeled_data(self):
+    feature_builder = BuildSampleClassifier()
+
+    features = np.array([[0,0,1], [0,1,0], [1,0,0]])
+    cluster_labels = np.array(['cluster_A', None, 'cluster_A'])
+
+    expected_features = np.array([[0,0,1], [1,0,0]])
+    expected_cluster_labels = np.array(['cluster_A', 'cluster_A'])
+
+    actual_cluster_labels, actual_features = feature_builder._only_labeled_data(cluster_labels, features)
+
+    assert_array_equal(actual_cluster_labels, expected_cluster_labels)
+    assert_array_equal(actual_features, expected_features)
