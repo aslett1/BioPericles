@@ -1,6 +1,7 @@
 import numpy as np
 import unittest
 
+from mock import MagicMock
 from numpy.testing import assert_array_equal
 from StringIO import StringIO
 
@@ -110,6 +111,18 @@ sample_1,1,2
   def test_only_labeled_data(self):
     feature_builder = BuildSampleClassifier()
 
+    sample_names = np.array(['sample_1', 'unknown_sample', 'sample_3'])
+    cluster_labels = np.array(['cluster_A', None, 'cluster_A'])
+
+    expected_sample_names = np.array(['unknown_sample'])
+    actual_sample_names = feature_builder._samples_with_unknown_clusters(sample_names,
+                                                                         cluster_labels)
+
+    assert_array_equal(actual_sample_names, expected_sample_names)
+
+  def test_samples_with_unknown_clusters(self):
+    feature_builder = BuildSampleClassifier()
+
     features = np.array([[0,0,1], [0,1,0], [1,0,0]])
     cluster_labels = np.array(['cluster_A', None, 'cluster_A'])
 
@@ -120,3 +133,13 @@ sample_1,1,2
 
     assert_array_equal(actual_cluster_labels, expected_cluster_labels)
     assert_array_equal(actual_features, expected_features)
+
+  def test_warn_about_unlabeled_samples(self):
+    feature_builder = BuildSampleClassifier()
+    sample_names = np.array(['unknown_sample'])
+
+    feature_builder.logger = MagicMock()
+    feature_builder._warn_about_unlabeled_samples(sample_names)
+
+    expected_warning = "Could not assign sample 'unknown_sample' to a cluster, skipping"
+    feature_builder.logger.warn.assert_called_with(expected_warning)

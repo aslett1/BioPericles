@@ -105,6 +105,16 @@ class BuildSampleClassifier(object):
     features_with_labels = features[known_labels]
     return clusters_with_labels, features_with_labels
 
+  def _warn_about_unlabeled_samples(self, samples):
+    for sample in samples:
+      self.logger.warn("Could not assign sample '%s' to a cluster, skipping" %
+                       sample)
+
+  def _samples_with_unknown_clusters(self, sample_names, cluster_labels):
+    is_none = np.vectorize(lambda v: v is None)
+    unknown_labels = is_none(cluster_labels)
+    return sample_names[unknown_labels]
+
   def _split_data(self, data, test_split=0.3):
     """Splits data into training and test sets
     
