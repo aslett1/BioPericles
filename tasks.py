@@ -229,7 +229,12 @@ def install_snp_sites():
     run("sudo make install")
     say("please run `export LD_LIBRARY_PATH=/usr/local/lib` in your terminal")
 
-@task(pre=[install_raxml, install_fastml, install_snp_sites],
+@task(pre=[apt_update])
+def install_numpy_dependencies():
+  apt_install('libblas-dev liblapack-dev gfortran')
+
+@task(pre=[install_raxml, install_fastml, install_snp_sites,
+           install_numpy_dependencies],
       post=[delete_install_folder])
 def install_all():
   pass

@@ -1,5 +1,8 @@
 import csv
 import logging
+import numpy as np
+
+from biopericles.Common import try_and_get_filename
 
 class SampleClassifier(object):
   def classify(self, features, feature_labels):
@@ -45,10 +48,7 @@ class BuildSampleClassifier(object):
     feature_file.seek(0)
     features_line = csv.reader(feature_file).next()
     if features_line[0] != 'Features':
-      try:
-        filename = feature_file.name
-      except AttributeError:
-        filename = 'unknown file'
+      filename = try_and_get_filename(feature_file)
       raise ValueError("Issue parsing '%s', expected first element to be 'Features'" % filename)
     feature_labels = features_line[1:]
     return feature_labels
@@ -63,9 +63,33 @@ class BuildSampleClassifier(object):
     # split the data into training and test sets
     pass
 
+  def _check_features_binary(self, features):
+    check_zero_or_one = np.vectorize(lambda v: (v==1) or (v==0))
+    return check_zero_or_one(features).all()
+
   def _extract_features(self, features_file):
-    """Parses a feature file and returns the features and feature labels"""
-    pass
+    """Parses a feature file and returns the sample_names and features"""
+    features_file.seek(0)
+    filename = try_and_get_filename(features_file)
+    feature_file_lines = [line for line in csv.reader(features_file)]
+    data = np.array(feature_file_lines)
+    try:
+      number_of_rows, number_of_columns = data.shape
+      # shape returns a 2 element tuple if there are a consistent number of
+      # columns.  Otherwise it returns a 1 element tuple which would trigger a
+      # ValueError.
+    except ValueError as e:
+      raise ValueError("Issue parsing '%s', some samples have more features than others" % filename)
+    feature_labels = data[0,1:]
+    sample_names = data[1:,0]
+    str_to_int = np.vectorize(int)
+    try:
+      features = str_to_int(data[1:,1:])
+    except ValueError:
+      raise ValueError("Issue parsing '%s', expected features to be 0 or 1" % filename)
+    if not self._check_features_binary(features):
+      raise ValueError("Issue parsing '%s', expected features to be 0 or 1" % filename)
+    return sample_names, features
 
   def _label_data(self, features, sample_to_cluster_map):
     """Takes samples and a mapping and labels the samples"""
