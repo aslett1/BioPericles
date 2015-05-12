@@ -98,6 +98,22 @@ class BuildSampleClassifier(object):
     sample_to_cluster = np.vectorize(sample_to_cluster_map.get, otypes=[object])
     return sample_to_cluster(sample_names)
 
+  def _only_relevant_features(self, features, feature_labels,
+                              relevant_feature_labels):
+    """Removes features which are not 'relevant'
+
+    Returns features, feature_labels which were found in relevant_features and
+    relevant_features which could not be found"""
+    feature_labels_list = list(feature_labels)
+    indices_of_common_features = [feature_labels_list.index(label) for label in
+                                  relevant_feature_labels if label in
+                                  feature_labels_list]
+    common_features = features[indices_of_common_features]
+    common_feature_labels = feature_labels[indices_of_common_features]
+    is_missing_feature = np.in1d(relevant_feature_labels, feature_labels) == False
+    missing_feature_labels = relevant_feature_labels[is_missing_feature]
+    return common_features, common_feature_labels, missing_feature_labels
+
   def _only_labeled_data(self, cluster_labels, features):
     is_not_none = np.vectorize(lambda v: v is not None)
     known_labels = is_not_none(cluster_labels)

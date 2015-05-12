@@ -108,6 +108,55 @@ sample_1,1,2
                                                                sample_to_cluster_map)
     assert_array_equal(clusters, expected)
 
+  def test_only_relevant_features(self):
+    feature_builder = BuildSampleClassifier()
+
+    features = np.array([[0,0,1], [0,1,0], [1,0,0]])
+    feature_labels = np.array(['feature_1', 'feature_2', 'feature_3'])
+
+    relevant_feature_labels = np.array(['feature_1', 'feature_2'])
+    expected_features = np.array([[0,0,1], [0,1,0]])
+    expected_labels = np.array(['feature_1', 'feature_2'])
+
+    results = feature_builder._only_relevant_features(features, feature_labels,
+                                                      relevant_feature_labels)
+    relevant_features, labels, missing_labels = results
+
+    assert_array_equal(relevant_features, expected_features)
+    assert_array_equal(labels, expected_labels)
+    self.assertEqual(list(missing_labels), [])
+
+
+    features = np.array([[0,0,1], [0,1,0], [1,0,0]])
+    feature_labels = np.array(['feature_1', 'feature_2', 'feature_3'])
+
+    relevant_feature_labels = np.array(['feature_2', 'feature_1'])
+    expected_features = np.array([[0,1,0], [0,0,1]])
+    expected_labels = np.array(['feature_2', 'feature_1'])
+    expected_missing_labels = np.array([])
+
+    results = feature_builder._only_relevant_features(features, feature_labels,
+                                                      relevant_feature_labels)
+    relevant_features, labels, missing_labels = results
+
+    assert_array_equal(relevant_features, expected_features)
+    assert_array_equal(labels, expected_labels)
+    assert_array_equal(list(missing_labels), [])
+
+
+    relevant_feature_labels = np.array(['feature_1', 'feature_4'])
+    expected_features = np.array([[0,0,1]])
+    expected_labels = np.array(['feature_1'])
+    expected_missing_labels = np.array(['feature_4'])
+
+    results = feature_builder._only_relevant_features(features, feature_labels,
+                                                      relevant_feature_labels)
+    relevant_features, labels, missing_labels = results
+
+    assert_array_equal(relevant_features, expected_features)
+    assert_array_equal(labels, expected_labels)
+    assert_array_equal(missing_labels, expected_missing_labels)
+
   def test_only_labeled_data(self):
     feature_builder = BuildSampleClassifier()
 
