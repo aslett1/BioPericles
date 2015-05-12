@@ -1,7 +1,7 @@
 import numpy as np
 import unittest
 
-from mock import MagicMock
+from mock import MagicMock, patch
 from numpy.testing import assert_array_equal
 from StringIO import StringIO
 
@@ -143,3 +143,32 @@ sample_1,1,2
 
     expected_warning = "Could not assign sample 'unknown_sample' to a cluster, skipping"
     feature_builder.logger.warn.assert_called_with(expected_warning)
+
+  @patch('biopericles.SampleClassifier.np.random')
+  def test_split_data(self, random_mock):
+    feature_builder = BuildSampleClassifier()
+
+    labels = np.array(['cluster_A', 'cluster_B', 'cluster_A', 'cluster_A', 'cluster_B'], dtype=object)
+    features = np.array([[0,0,1], [0,1,0], [0,1,1], [1,0,0], [1,0,1]])
+
+    random_mock.uniform.return_value = np.array([0.1,0.2,0.65,0.7,0.75])
+
+    expected_training_labels = np.array(['cluster_A', 'cluster_B', 'cluster_A'], dtype=object)
+    expected_testing_labels = np.array(['cluster_A', 'cluster_B'], dtype=object)
+
+    expected_training_features = np.array([[0,0,1], [0,1,0], [0,1,1]])
+    expected_testing_features = np.array([[1,0,0], [1,0,1]])
+
+    results = feature_builder._split_data(labels, features, test_split=0.3)
+    training_labels, training_features = results[:2]
+    testing_labels, testing_features = results[2:]
+
+    assert_array_equal(training_labels, expected_training_labels)
+    assert_array_equal(training_features, expected_training_features)
+    assert_array_equal(testing_labels, expected_testing_labels)
+    assert_array_equal(testing_features, expected_testing_features)
+
+    labels = np.array(['cluster_A', 'cluster_B', 'cluster_A', 'cluster_A', 'cluster_B'], dtype=object)
+    features = np.array([[0,1,0], [0,1,1], [1,0,0], [1,0,1]]) # Not enough features
+
+    self.assertRaises(ValueError, feature_builder._split_data, labels, features, test_split=0.3)

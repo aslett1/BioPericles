@@ -115,10 +115,23 @@ class BuildSampleClassifier(object):
     unknown_labels = is_none(cluster_labels)
     return sample_names[unknown_labels]
 
-  def _split_data(self, data, test_split=0.3):
+  def _split_data(self, labels, features, test_split=0.3):
     """Splits data into training and test sets
     
     Uses test_split to determine what proportion of the available data should be
     held back for testing (defaults to 30%) and how much should be used for
     training"""
-    pass
+
+    if len(labels) != len(features):
+      raise ValueError("Cannot split data without equal number of sample names and features")
+
+    training_split = np.random.uniform(0,1,len(labels)) < (1.0 - test_split)
+    testing_split = training_split == False
+
+    training_labels = labels[training_split]
+    training_features = features[training_split]
+
+    testing_labels = labels[testing_split]
+    testing_features = features[testing_split]
+
+    return training_labels, training_features, testing_labels, testing_features
