@@ -183,6 +183,16 @@ sample_1,1,2
     assert_array_equal(actual_cluster_labels, expected_cluster_labels)
     assert_array_equal(actual_features, expected_features)
 
+  def test_warn_missing_features(self):
+    feature_builder = BuildSampleClassifier()
+    feature_names = np.array(['unknown_feature'])
+
+    feature_builder.logger = MagicMock()
+    feature_builder._warn_about_missing_features(feature_names)
+
+    expected_warning = "Could not find feature 'unknown_feature', ignoring it"
+    feature_builder.logger.warn.assert_called_with(expected_warning)
+
   def test_warn_about_unlabeled_samples(self):
     feature_builder = BuildSampleClassifier()
     sample_names = np.array(['unknown_sample'])

@@ -114,6 +114,10 @@ class BuildSampleClassifier(object):
     missing_feature_labels = relevant_feature_labels[is_missing_feature]
     return common_features, common_feature_labels, missing_feature_labels
 
+  def _warn_about_missing_features(self, features):
+    for feature in features:
+      self.logger.warn("Could not find feature '%s', ignoring it" % feature)
+
   def _only_labeled_data(self, cluster_labels, features):
     is_not_none = np.vectorize(lambda v: v is not None)
     known_labels = is_not_none(cluster_labels)
