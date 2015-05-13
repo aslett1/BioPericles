@@ -157,7 +157,7 @@ sample_1,1,2
     assert_array_equal(labels, expected_labels)
     assert_array_equal(missing_labels, expected_missing_labels)
 
-  def test_only_labeled_data(self):
+  def test_samples_with_unknown_clusters(self):
     feature_builder = BuildSampleClassifier()
 
     sample_names = np.array(['sample_1', 'unknown_sample', 'sample_3'])
@@ -169,7 +169,7 @@ sample_1,1,2
 
     assert_array_equal(actual_sample_names, expected_sample_names)
 
-  def test_samples_with_unknown_clusters(self):
+  def test_only_labeled_data(self):
     feature_builder = BuildSampleClassifier()
 
     features = np.array([[0,0,1], [0,1,0], [1,0,0]])
@@ -183,7 +183,7 @@ sample_1,1,2
     assert_array_equal(actual_cluster_labels, expected_cluster_labels)
     assert_array_equal(actual_features, expected_features)
 
-  def test_warn_missing_features(self):
+  def test_warn_about_missing_features(self):
     feature_builder = BuildSampleClassifier()
     feature_names = np.array(['unknown_feature'])
 
