@@ -20,10 +20,12 @@ class SampleClassifier(object):
 class BuildSampleClassifier(object):
   def __init__(self):
     self.sample_to_cluster_map = None
-    self.all_features_file = None
     self.relevant_feature_labels = []
-    self.training_data = None
-    self.test_data = None
+    self.feature_labels = None
+    self.training_labels = None
+    self.training_features = None
+    self.testing_labels = None
+    self.testing_features = None
     self.logger = logging.getLogger(__name__)
 
   def train(self):
@@ -51,18 +53,38 @@ class BuildSampleClassifier(object):
       filename = try_and_get_filename(feature_file)
       raise ValueError("Issue parsing '%s', expected first element to be 'Features'" % filename)
     feature_labels = features_line[1:]
-    return feature_labels
+    return np.array(feature_labels)
 
   def load_data(self, features_file, sample_to_cluster_map, relevant_features):
     """Loads features from a CSV and labels the samples by cluster
 
     Also removes features which are not in a specified whitelist"""
     # load the data from a file of features
+    sample_names, features = self._extract_features(features_file)
     # keep a copy of the feature labels
+    cluster_labels = self._get_cluster_labels_for_samples(sample_names,
+                                                          sample_to_cluster_map)
+    # get feature labels
+    feature_labels = self.get_feature_labels_from_file(features_file)
     # remove the irrelevant features
+    features, feature_labels, missing_feature_labels = self._only_relevant_features(features,
+                                                                                    feature_labels,
+                                                                                    relevant_features)
+    # warn about missing features
+    self._warn_about_missing_features(missing_feature_labels)
     # remove unlabeled data (and warn the user)
+    cluster_labels_for_features = self._get_cluster_labels_for_samples(sample_names,
+                                                                sample_to_cluster_map)
+    unlabeled_samples = self._samples_with_unknown_clusters(sample_names,
+                                                            cluster_labels_for_features)
+    self._warn_about_unlabeled_samples(unlabeled_samples)
+    clusters_with_labels, features_with_labels = self._only_labeled_data(cluster_labels_for_features,
+                                                                         features)
     # split the data into training and test sets
-    pass
+    split = self._split_data(clusters_with_labels, features_with_labels, test_split=0.3)
+    self.training_labels, self.training_features = split[:2]
+    self.testing_labels, self.testing_features = split[2:]
+    self.feature_labels = feature_labels
 
   def _check_features_binary(self, features):
     check_zero_or_one = np.vectorize(lambda v: (v==1) or (v==0))
@@ -137,7 +159,7 @@ class BuildSampleClassifier(object):
 
   def _split_data(self, labels, features, test_split=0.3):
     """Splits data into training and test sets
-    
+
     Uses test_split to determine what proportion of the available data should be
     held back for testing (defaults to 30%) and how much should be used for
     training"""

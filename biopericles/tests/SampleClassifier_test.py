@@ -8,6 +8,45 @@ from StringIO import StringIO
 from biopericles.SampleClassifier import BuildSampleClassifier
 
 class TestBuildSampleClassifier(unittest.TestCase):
+  @patch('biopericles.SampleClassifier.np.random')
+  def test_load_data(self, random_mock):
+    feature_builder = BuildSampleClassifier()
+    feature_builder.logger = MagicMock()
+
+    file_contents = """\
+Features,feature_1,feature_2,feature_3
+sample_1,0,1,1
+sample_2,1,0,1
+sample_3,1,0,0
+"""
+    feature_file = StringIO(file_contents)
+    sample_to_cluster_map = {'sample_1': 'cluster_A', 'sample_2': 'cluster_B',
+                             'unused_sample': 'unused_cluster'}
+    relevant_features = np.array(['feature_1', 'feature_2', 'missing_feature'])
+
+    random_mock.uniform.return_value = np.array([0.1,0.9])
+
+    feature_builder.load_data(feature_file, sample_to_cluster_map,
+                              relevant_features)
+
+    expected_training_labels = np.array(['cluster_A'])
+    expected_training_features = np.array([[0, 1]])
+
+    expected_testing_labels = np.array(['cluster_B'])
+    expected_testing_features = np.array([[1, 0]])
+
+    assert_array_equal(feature_builder.training_labels,
+                       expected_training_labels)
+    assert_array_equal(feature_builder.training_features,
+                       expected_training_features)
+    assert_array_equal(feature_builder.testing_labels,
+                       expected_testing_labels)
+    assert_array_equal(feature_builder.testing_features,
+                       expected_testing_features)
+
+    feature_builder.logger.warn.assert_any_call("Could not assign sample 'sample_3' to a cluster, skipping")
+    feature_builder.logger.warn.assert_any_call("Could not find feature 'missing_feature', ignoring it")
+
   def test_get_feature_labels_from_file(self):
     feature_builder = BuildSampleClassifier()
 
