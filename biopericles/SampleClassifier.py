@@ -2,9 +2,15 @@ import csv
 import logging
 import numpy as np
 
+from sklearn.ensemble import RandomForestClassifier
+
 from biopericles.Common import try_and_get_filename
 
 class SampleClassifier(object):
+  def __init__(self, classifier, feature_labels):
+    self.classifier = classifier
+    self.feature_labels = feature_labels
+
   def classify(self, features, feature_labels):
     """Takes a sample and classifies it"""
     pass
@@ -27,19 +33,23 @@ class BuildSampleClassifier(object):
     self.testing_labels = None
     self.testing_features = None
     self.logger = logging.getLogger(__name__)
+    self.classifier = None
 
-  def train(self):
+  def train(self, *args, **kwargs):
     """Trains a classifier using the training data"""
-    pass
+    rf = RandomForrestClassifier(*args, **kwargs)
+    rf.fit(self.training_features, self.training_labels)
+    self.classifier = SampleClassifier(rf, self.feature_labels)
 
   def get_classifier(self):
     """Returns a SampleClassifier which can be used elsewhere"""
-    pass
+    return self.classifier
 
   def test(self):
     """Returns statistics about the current classifier's performance on test
     data"""
-    pass
+    assert self.feature_labels == self.classifier.feature_labels
+    return self.classifier.classifier.score(self.testing_features, self.testing_labels)
 
   def get_feature_labels_from_file(self, feature_file):
     """Parses a file of features and returns the feature labels
