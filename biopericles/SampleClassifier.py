@@ -6,6 +6,24 @@ from sklearn.ensemble import RandomForestClassifier
 
 from biopericles.Common import try_and_get_filename
 
+class SortFeaturesMixin(object):
+  def sort_features(self, features, old_labels, new_labels):
+    """Given a list of features and labels, re-orders the features
+
+    Uses the order of new_labels to sort the features which were originally
+    sorted by old_labels.  A list of new_labels which were not found in the
+    old_labels are returned alongside a list of the new_labels which were
+    found"""
+    old_labels_list = list(old_labels)
+    indices_of_common_features = [old_labels_list.index(label) for label in
+                                  new_labels if label in
+                                  old_labels]
+    new_features = features[:,indices_of_common_features]
+    labels = old_labels[indices_of_common_features]
+    is_missing_label = np.in1d(new_labels, old_labels) == False
+    missing_labels = new_labels[is_missing_label]
+    return new_features, labels, missing_labels
+
 class SampleClassifier(object):
   def __init__(self, classifier, feature_labels):
     self.classifier = classifier
@@ -23,7 +41,7 @@ class SampleClassifier(object):
     """Loads a classifier from a file"""
     pass
 
-class BuildSampleClassifier(object):
+class BuildSampleClassifier(SortFeaturesMixin):
   def __init__(self):
     self.sample_to_cluster_map = None
     self.relevant_feature_labels = []
@@ -136,15 +154,7 @@ class BuildSampleClassifier(object):
 
     Returns features, feature_labels which were found in relevant_features and
     relevant_features which could not be found"""
-    feature_labels_list = list(feature_labels)
-    indices_of_common_features = [feature_labels_list.index(label) for label in
-                                  relevant_feature_labels if label in
-                                  feature_labels_list]
-    common_features = features[:,indices_of_common_features]
-    common_feature_labels = feature_labels[indices_of_common_features]
-    is_missing_feature = np.in1d(relevant_feature_labels, feature_labels) == False
-    missing_feature_labels = relevant_feature_labels[is_missing_feature]
-    return common_features, common_feature_labels, missing_feature_labels
+    return self.sort_features(features, feature_labels, relevant_feature_labels)
 
   def _warn_about_missing_features(self, features):
     for feature in features:

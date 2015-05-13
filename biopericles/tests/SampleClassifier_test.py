@@ -5,7 +5,29 @@ from mock import MagicMock, patch
 from numpy.testing import assert_array_equal
 from StringIO import StringIO
 
-from biopericles.SampleClassifier import BuildSampleClassifier
+from biopericles.SampleClassifier import BuildSampleClassifier, \
+                                         SortFeaturesMixin
+
+class TestSortFeaturesMixin(unittest.TestCase):
+  def test_sort_features(self):
+    sorter = SortFeaturesMixin()
+
+    features = np.array([[0,0,0,1], [0,0,1,0], [0,0,1,1], [0,1,0,0]])
+    old_labels = np.array(['feature_1', 'feature_2', 'feature_3', 'feature_4'])
+    new_labels = np.array(['feature_1', 'feature_3', 'feature_2',
+                           'unknown_feature'])
+
+    new_features, labels, missing_labels = sorter.sort_features(features,
+                                                                old_labels,
+                                                                new_labels)
+
+    expected_new_features = np.array([[0,0,0], [0,1,0], [0,1,0], [0,0,1]])
+    expected_labels = np.array(['feature_1', 'feature_3', 'feature_2'])
+    expected_missing_labels = np.array(['unknown_feature'])
+
+    assert_array_equal(new_features, expected_new_features)
+    assert_array_equal(labels, expected_labels)
+    assert_array_equal(missing_labels, expected_missing_labels)
 
 class TestBuildSampleClassifier(unittest.TestCase):
   @patch('biopericles.SampleClassifier.np.random')
