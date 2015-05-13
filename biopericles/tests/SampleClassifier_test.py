@@ -115,7 +115,7 @@ sample_1,1,2
     feature_labels = np.array(['feature_1', 'feature_2', 'feature_3'])
 
     relevant_feature_labels = np.array(['feature_1', 'feature_2'])
-    expected_features = np.array([[0,0,1], [0,1,0]])
+    expected_features = np.array([[0,0], [0,1], [1,0]])
     expected_labels = np.array(['feature_1', 'feature_2'])
 
     results = feature_builder._only_relevant_features(features, feature_labels,
@@ -131,7 +131,7 @@ sample_1,1,2
     feature_labels = np.array(['feature_1', 'feature_2', 'feature_3'])
 
     relevant_feature_labels = np.array(['feature_2', 'feature_1'])
-    expected_features = np.array([[0,1,0], [0,0,1]])
+    expected_features = np.array([[0,0], [1,0], [0,1]])
     expected_labels = np.array(['feature_2', 'feature_1'])
     expected_missing_labels = np.array([])
 
@@ -145,7 +145,7 @@ sample_1,1,2
 
 
     relevant_feature_labels = np.array(['feature_1', 'feature_4'])
-    expected_features = np.array([[0,0,1]])
+    expected_features = np.array([[0], [0], [1]])
     expected_labels = np.array(['feature_1'])
     expected_missing_labels = np.array(['feature_4'])
 

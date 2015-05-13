@@ -108,7 +108,7 @@ class BuildSampleClassifier(object):
     indices_of_common_features = [feature_labels_list.index(label) for label in
                                   relevant_feature_labels if label in
                                   feature_labels_list]
-    common_features = features[indices_of_common_features]
+    common_features = features[:,indices_of_common_features]
     common_feature_labels = feature_labels[indices_of_common_features]
     is_missing_feature = np.in1d(relevant_feature_labels, feature_labels) == False
     missing_feature_labels = relevant_feature_labels[is_missing_feature]
