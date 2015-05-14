@@ -1,6 +1,8 @@
 import csv
+import hashlib
 import logging
 import numpy as np
+import cPickle as pickle
 
 from sklearn.ensemble import RandomForestClassifier
 
@@ -51,11 +53,60 @@ class SampleClassifier(SortFeaturesMixin):
 
   def export(self, output_file):
     """Writes the classifier to a file"""
-    pass
+    filename = try_and_get_filename(output_file)
+    self.logger.info("Writing classifier to '%s'" % filename)
+    pickle.dump((self.classifier, self.feature_labels), output_file)
+    with open(filename, 'rb') as hash_check_file:
+      (md5sum, sha256sum) = self._calculate_hashes(hash_check_file)
+    self.logger.info("Wrote classifier with md5sum '%s' to '%s'" % (filename,
+                                                                    md5sum))
+    self.logger.info("Wrote classifier with sha256'%s' to '%s'" % (filename,
+                                                                   sha256sum))
 
-  def load(self, input_file):
+  @classmethod
+  def load(cls, input_file, md5sum=None, sha256sum=None, force=False):
     """Loads a classifier from a file"""
-    pass
+    logger = logging.getLogger(__name__)
+    filename = try_and_get_filename(input_file)
+    if (md5sum, sha256sum, force) == (None, None, False):
+      message = "Loading unknown pickled objects is dangerous.  Either \
+provide an md5 or sha256 for '%s' or explicitly 'force' if you want to \
+live dangerously" % filename
+      logger.error(message)
+      raise ValueError(message)
+    (actual_md5sum, actual_sha256sum) = cls._calculate_hashes(input_file)
+    if not md5sum is None:
+      if actual_md5sum != md5sum:
+        message = "Expected md5sum of '%s' to be '%s' but got '%s'" % (filename,
+                                                                       md5sum,
+                                                                       actual_md5sum)
+        if force:
+          logger.warn("FORCED so ignoring: %s" % message)
+        else:
+          logger.error(message)
+          raise ValueError(message)
+    if not sha256sum is None:
+      if actual_sha256sum != sha256sum:
+        message = "Expected sha256sum of '%s' to be '%s' but got '%s'" % (filename,
+                                                                          sha256sum,
+                                                                          actual_sha256sum)
+        if force:
+          logger.warn("FORCED so ignoring: %s" % message)
+        else:
+          logger.error(message)
+          raise ValueError(message)
+
+    input_file.seek(0)
+    classifier, feature_labels = pickle.load(input_file)
+    return SampleClassifier(classifier, feature_labels)
+
+  @classmethod
+  def _calculate_hashes(cls, pickle_file):
+    pickle_file.seek(0)
+    md5sum = hashlib.md5(pickle_file.read()).hexdigest()
+    pickle_file.seek(0)
+    sha256sum = hashlib.sha256(pickle_file.read()).hexdigest()
+    return (md5sum, sha256sum)
 
   def _error_about_missing_features(self, features):
     for feature in features:

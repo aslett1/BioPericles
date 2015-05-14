@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import unittest
 
@@ -9,6 +10,12 @@ from StringIO import StringIO
 from biopericles.SampleClassifier import SampleClassifier, \
                                          BuildSampleClassifier, \
                                          SortFeaturesMixin
+from biopericles.Common import context_aware_tempfile
+
+def test_data():
+  this_file = os.path.abspath(__file__)
+  this_dir = os.path.dirname(this_file)
+  return os.path.join(this_dir, 'data')
 
 class TestSortFeaturesMixin(unittest.TestCase):
   def test_sort_features(self):
@@ -72,6 +79,57 @@ class TestSampleClassifier(unittest.TestCase):
     labels = np.array(['feature_1'])
     self.assertRaises(ValueError, classifier.classify, np.array([0,1]), feature_labels=labels)
     classifier.logger.error.assert_any_call("Classifier trained with 2 features, got 1 to make prediction with")
+
+  @patch('biopericles.SampleClassifier.logging')
+  def test_load(self, logging_mock):
+    # I've patched logging because I don't want the noise
+    path_to_classifier = os.path.join(test_data(), 'classifier.pkl')
+    actual_md5sum = '9c829ce1a9806a6975442e761f4e616d'
+    actual_sha256sum = 'b7e9ad6835fd3f4970229c4c5ab97a14bd2c118da3f2b73ce9df10072b7aa597'
+    with open(path_to_classifier, 'rb') as classifier_file:
+      self.assertRaises(ValueError, SampleClassifier.load, classifier_file)
+      self.assertRaises(ValueError, SampleClassifier.load, classifier_file,
+                        md5sum='wrong')
+      self.assertRaises(ValueError, SampleClassifier.load, classifier_file,
+                        sha256sum='wrong')
+      self.assertRaises(ValueError, SampleClassifier.load, classifier_file,
+                        md5sum='wrong', sha256sum=actual_sha256sum)
+      classifier = SampleClassifier.load(classifier_file, md5sum=actual_md5sum)
+      self.assertIsInstance(classifier.classifier, RandomForestClassifier)
+      classifier = SampleClassifier.load(classifier_file, sha256sum=actual_sha256sum)
+      classifier = SampleClassifier.load(classifier_file, force=True)
+      classifier = SampleClassifier.load(classifier_file, md5sum='wrong', force=True)
+      assert_array_equal(classifier.feature_labels, np.array(['feature_1',
+                                                              'feature_2']))
+
+  def test_export(self):
+    rf = RandomForestClassifier()
+    rf.fit(np.array([[0,1]]), np.array(['cluster_1']))
+
+    classifier = SampleClassifier(rf, np.array(['feature_1','feature_2']))
+    classifier.logger = MagicMock()
+
+    with context_aware_tempfile('w', delete=False) as output_file:
+      classifier.export(output_file)
+      output_file.close()
+      input_file = open(output_file.name, 'r')
+      new_classifier = SampleClassifier.load(input_file, force=True)
+
+################################################################################
+##   Uncomment me if you want to create a new classifier test file.  Remember to
+##   update the md5sum and sha256sum values in the test_load function above
+##   afterwards even if you haven't changed how the classifier is created.
+################################################################################
+#
+#    path_to_classifier = os.path.join(test_data(), 'classifier.pkl')
+#    with open(path_to_classifier, 'wb') as output_file:
+#      classifier.export(output_file)
+#
+################################################################################
+
+    self.assertIsInstance(new_classifier.classifier, RandomForestClassifier)
+    assert_array_equal(new_classifier.feature_labels, np.array(['feature_1',
+                                                                'feature_2']))
 
 class TestBuildSampleClassifier(unittest.TestCase):
   @patch('biopericles.SampleClassifier.np.random')
