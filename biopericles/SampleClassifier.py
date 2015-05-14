@@ -24,14 +24,27 @@ class SortFeaturesMixin(object):
     missing_labels = new_labels[is_missing_label]
     return new_features, labels, missing_labels
 
-class SampleClassifier(object):
+class SampleClassifier(SortFeaturesMixin):
   def __init__(self, classifier, feature_labels):
     self.classifier = classifier
     self.feature_labels = feature_labels
 
-  def classify(self, features, feature_labels):
-    """Takes a sample and classifies it"""
-    pass
+  def classify(self, features, feature_labels=None):
+    """Takes a sample and classifies it
+
+    Defaults to assuming that the features are in the same order as those used
+    for initial training.  If this is not the case, a list of feature labels can
+    be provided which are used to re-sort the features before making a
+    predicition.  Throws an exception if a required feature is missing."""
+    number_of_array_dimensions = len(features.shape)
+    if number_of_array_dimensions == 1:
+      # Features is one dimensional, make it 2D
+      features = np.array([features])
+    if not feature_labels is None:
+      features, labels, missing_labels = self.sort_features(features,
+                                                            feature_labels,
+                                                            self.feature_labels)
+    return self.classifier.predict(features)
 
   def export(self, output_file):
     """Writes the classifier to a file"""

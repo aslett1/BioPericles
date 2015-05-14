@@ -3,9 +3,11 @@ import unittest
 
 from mock import MagicMock, patch
 from numpy.testing import assert_array_equal
+from sklearn.ensemble import RandomForestClassifier
 from StringIO import StringIO
 
-from biopericles.SampleClassifier import BuildSampleClassifier, \
+from biopericles.SampleClassifier import SampleClassifier, \
+                                         BuildSampleClassifier, \
                                          SortFeaturesMixin
 
 class TestSortFeaturesMixin(unittest.TestCase):
@@ -28,6 +30,43 @@ class TestSortFeaturesMixin(unittest.TestCase):
     assert_array_equal(new_features, expected_new_features)
     assert_array_equal(labels, expected_labels)
     assert_array_equal(missing_labels, expected_missing_labels)
+
+class TestSampleClassifier(unittest.TestCase):
+  def check_latest(self, mock, expected_array):
+    ((arg,), kwargs) = mock.call_args
+    assert_array_equal(arg, expected_array)
+
+  def test_classify(self):
+    rf = RandomForestClassifier()
+    rf.fit(np.array([[0,1]]), np.array(['cluster_1']))
+
+    classifier_mock = MagicMock()
+    classifier_mock.predict.side_effect = rf.predict
+    classifier = SampleClassifier(classifier_mock, np.array(['feature_1',
+                                                             'feature_2']))
+
+    classifier.classify(np.array([0,1]))
+    self.check_latest(classifier.classifier.predict, np.array([[0,1]]))
+
+    classifier.classify(np.array([[0,1],[1,0]]))
+    self.check_latest(classifier.classifier.predict, np.array([[0,1],[1,0]]))
+
+    labels = np.array(['feature_2', 'feature_1'])
+    classifier.classify(np.array([0,1]), feature_labels=labels)
+    self.check_latest(classifier.classifier.predict, np.array([[1,0]]))
+
+    labels = np.array(['feature_1', 'feature_2'])
+    classifier.classify(np.array([0,1]), feature_labels=labels)
+    self.check_latest(classifier.classifier.predict, np.array([[0,1]]))
+
+    labels = np.array(['feature_1', 'unknown_label'])
+    self.assertRaises(ValueError, classifier.classify, np.array([0,1]), feature_labels=labels)
+
+    self.assertRaises(ValueError, classifier.classify, np.array([0]))
+    self.assertRaises(ValueError, classifier.classify, np.array([0,0,1]))
+
+    labels = np.array(['feature_1'])
+    self.assertRaises(ValueError, classifier.classify, np.array([0,1]), feature_labels=labels)
 
 class TestBuildSampleClassifier(unittest.TestCase):
   @patch('biopericles.SampleClassifier.np.random')
