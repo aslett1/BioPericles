@@ -44,6 +44,7 @@ class TestSampleClassifier(unittest.TestCase):
     classifier_mock.predict.side_effect = rf.predict
     classifier = SampleClassifier(classifier_mock, np.array(['feature_1',
                                                              'feature_2']))
+    classifier.logger = MagicMock()
 
     classifier.classify(np.array([0,1]))
     self.check_latest(classifier.classifier.predict, np.array([[0,1]]))
@@ -61,12 +62,16 @@ class TestSampleClassifier(unittest.TestCase):
 
     labels = np.array(['feature_1', 'unknown_label'])
     self.assertRaises(ValueError, classifier.classify, np.array([0,1]), feature_labels=labels)
+    classifier.logger.error.assert_any_call("Could not find feature 'feature_2', ignoring it")
 
     self.assertRaises(ValueError, classifier.classify, np.array([0]))
+    classifier.logger.error.assert_any_call("Classifier trained with 2 features, got 1 to make prediction with")
     self.assertRaises(ValueError, classifier.classify, np.array([0,0,1]))
+    classifier.logger.error.assert_any_call("Classifier trained with 2 features, got 3 to make prediction with")
 
     labels = np.array(['feature_1'])
     self.assertRaises(ValueError, classifier.classify, np.array([0,1]), feature_labels=labels)
+    classifier.logger.error.assert_any_call("Classifier trained with 2 features, got 1 to make prediction with")
 
 class TestBuildSampleClassifier(unittest.TestCase):
   @patch('biopericles.SampleClassifier.np.random')

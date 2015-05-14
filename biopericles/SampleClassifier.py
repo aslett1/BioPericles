@@ -28,6 +28,7 @@ class SampleClassifier(SortFeaturesMixin):
   def __init__(self, classifier, feature_labels):
     self.classifier = classifier
     self.feature_labels = feature_labels
+    self.logger = logging.getLogger(__name__)
 
   def classify(self, features, feature_labels=None):
     """Takes a sample and classifies it
@@ -44,6 +45,8 @@ class SampleClassifier(SortFeaturesMixin):
       features, labels, missing_labels = self.sort_features(features,
                                                             feature_labels,
                                                             self.feature_labels)
+      self._error_about_missing_features(missing_labels)
+    self._check_feature_dimensions(features)
     return self.classifier.predict(features)
 
   def export(self, output_file):
@@ -53,6 +56,21 @@ class SampleClassifier(SortFeaturesMixin):
   def load(self, input_file):
     """Loads a classifier from a file"""
     pass
+
+  def _error_about_missing_features(self, features):
+    for feature in features:
+      self.logger.error("Could not find feature '%s', ignoring it" % feature)
+
+  def _check_feature_dimensions(self, features):
+    try:
+      n_samples, n_features = features.shape
+    except ValueError:
+      (n_features,) = features.shape
+    (n_classifier_features,) = self.feature_labels.shape
+    if n_features != n_classifier_features:
+      message = "Classifier trained with %s features, got %s to make prediction with"
+      message = message % (n_classifier_features, n_features)
+      self.logger.error(message)
 
 class BuildSampleClassifier(SortFeaturesMixin):
   def __init__(self):
