@@ -1,0 +1,64 @@
+#!/usr/bin/env python
+
+import argparse
+import csv
+import logging
+import os
+import sys
+
+from argparse import FileType
+
+from biopericles.SampleClassifier import BuildSampleClassifier
+from biopericles.SampleMetadataReader import SampleMetadataReader
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__) 
+
+if __name__ == '__main__':
+  parser = argparse.ArgumentParser()
+  parser.description = "Trains a cluster classifier, also outputs a performance score"
+  parser.add_argument('all_features', type=FileType(mode='r'),
+                      help="CSV file with all features for all samples")
+  # When you cluster samples, you throw away inconsistencies within the cluster.
+  # When you use these clusters to create features you create fewer features
+  # because there is less variation between clusters than there is within them.
+  # The following option can be used to extract the labels of the features which
+  # differ between clusters.
+  parser.add_argument('--cluster-features', dest='cluster_features', type=FileType(mode='r'),
+                      help="CSV file with features for clusters")
+  parser.add_argument('metadata', type=FileType(mode='r'),
+                      help="CSV formatted metadata linking samples to clusters")
+  sample_arg = parser.add_argument('--sequence-column', '-s', dest="sample_idx",
+                      type=int, default=1,
+                      help="Metadata column for sequence name (default: 1)")
+  cluster_arg = parser.add_argument('--cluster-column', '-c', dest="cluster_idx",
+                      type=int, default=3,
+                      help="Metadata column for cluster name (default: 3)")
+  parser.add_argument('classifier_output', type=FileType(mode='wb'),
+                      help="Path to classifier output file")
+  parser.epilog = "NB column numbering starts from 1"
+
+  args = parser.parse_args()
+
+  if args.sample_idx <= 0:
+    raise ArgumentError(sample_arg, "Columns are numbered from 1")
+  if args.cluster_idx <= 0:
+    raise ArgumentError(cluster_arg, "Columns are numbered from 1")
+
+  metadata_filename = args.metadata.name
+  metadata = SampleMetadataReader(metadata_filename,
+                                  args.sample_idx - 1,
+                                  args.cluster_idx - 1)
+
+  classifier_builder = BuildSampleClassifier()
+  if args.cluster_features:
+    relevant_features = classifier_builder.get_feature_labels_from_file(args.cluster_features)
+  else:
+    relevant_features = classifier_builder.get_feature_labels_from_file(args.all_features)
+  classifier_builder.load_data(args.all_features, metadata.sample_cluster_map,
+                               relevant_features)
+  classifier_builder.train()
+  accuracy = classifier_builder.test()
+  logger.info("Classifier had an accuracy of %s on 30%% test set" % accuracy)
+  classifier = classifier_builder.get_classifier()
+  classifier.export(args.classifier_output)
