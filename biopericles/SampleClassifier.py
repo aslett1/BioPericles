@@ -56,12 +56,13 @@ class SampleClassifier(SortFeaturesMixin):
     filename = try_and_get_filename(output_file)
     self.logger.info("Writing classifier to '%s'" % filename)
     pickle.dump((self.classifier, self.feature_labels), output_file)
+    output_file.flush()
     with open(filename, 'rb') as hash_check_file:
       (md5sum, sha256sum) = self._calculate_hashes(hash_check_file)
-    self.logger.info("Wrote classifier with md5sum '%s' to '%s'" % (filename,
-                                                                    md5sum))
-    self.logger.info("Wrote classifier with sha256'%s' to '%s'" % (filename,
-                                                                   sha256sum))
+    self.logger.info("Wrote classifier with md5sum '%s' to '%s'" % (md5sum,
+                                                                    filename))
+    self.logger.info("Wrote classifier with sha256sum '%s' to '%s'" % (sha256sum,
+                                                                    filename))
 
   @classmethod
   def load(cls, input_file, md5sum=None, sha256sum=None, force=False):
@@ -137,7 +138,7 @@ class BuildSampleClassifier(SortFeaturesMixin):
 
   def train(self, *args, **kwargs):
     """Trains a classifier using the training data"""
-    rf = RandomForrestClassifier(*args, **kwargs)
+    rf = RandomForestClassifier(*args, **kwargs)
     rf.fit(self.training_features, self.training_labels)
     self.classifier = SampleClassifier(rf, self.feature_labels)
 
@@ -148,7 +149,7 @@ class BuildSampleClassifier(SortFeaturesMixin):
   def test(self):
     """Returns statistics about the current classifier's performance on test
     data"""
-    assert self.feature_labels == self.classifier.feature_labels
+    assert (self.feature_labels == self.classifier.feature_labels).all()
     return self.classifier.classifier.score(self.testing_features, self.testing_labels)
 
   def get_feature_labels_from_file(self, feature_file):
