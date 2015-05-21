@@ -3,3 +3,5 @@ biopython
 requests
 invoke
 git+https://github.com/jamescasbon/PyVCF.git@ec193b12b9443dc40b0ea49cde134fe60915b60f#egg=PyVCF-0.6.7
+scikit-learn
+scipy
