@@ -4,12 +4,14 @@ import os
 import re
 import shutil
 import tempfile
+import vcf
 
 from vcf import Reader
 from biopericles.Common import LoadFastaMixin, \
                                RunExternalApplicationMixin, \
                                ExternalApplicationException, \
-                               context_aware_tempfile, context_aware_tempdir
+                               context_aware_tempfile, context_aware_tempdir, \
+                               try_and_get_filename
 
 class SNPSitesException(ExternalApplicationException):
   pass
@@ -51,6 +53,13 @@ class SNPSitesReader(Reader):
       return "\t".join(row)
     else:
       return line
+
+  def add_GT_format_header(self):
+    GT_header = vcf.parser._Format(id='GT',
+                                   num=1,
+                                   type='String',
+                                   desc='Genotype')
+    self.formats['GT'] = GT_header
 
   def _amend_genotype_fields(self, row, gt_lookup):
     new_fields = map(lambda field: gt_lookup.get(field, '.'), row[9:])
@@ -131,6 +140,15 @@ class SNPFeatureBuilder(LoadFastaMixin, RunExternalApplicationMixin):
     self.logger.info("Creating features")
     for record in self._get_records_from_vcf():
       self._add_record_to_features(record)
+
+  def write_vcf_file(self, vcf_output_file):
+    reader = self._get_records_from_vcf()
+    reader.add_GT_format_header() # This might not be true but it doesn't hurt
+    writer = vcf.Writer(vcf_output_file, reader)
+    filename = try_and_get_filename(vcf_output_file)
+    self.logger.info("Writing VCF records to '%s'" % filename)
+    for record in reader:
+      writer.write_record(record)
 
   def _get_records_from_vcf(self):
     self.vcf_input_file.seek(0)

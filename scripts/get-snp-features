@@ -21,6 +21,9 @@ if __name__ == '__main__':
   parser.description = "Takes an aligned multifasta, outputs features based on SNPs"
   parser.add_argument('multifasta', type=FileType(mode='r'),
                       help="Multifasta with aligned sequences")
+  parser.add_argument('--vcf-output', dest='vcf_output_file',
+                      type=FileType(mode='w'),
+                      help="File to output the VCF used when creating features")
   parser.add_argument('--features-output', '-o', dest="output_file", type=str,
                       default='-', help="Output file (defaults to stdout)")
   parser.add_argument('--snp-sites-executable', '-s', dest="snp_sites_exec", type=str,
@@ -37,6 +40,8 @@ if __name__ == '__main__':
   builder.snp_sites_exec = args.snp_sites_exec
   builder.load_fasta_sequences(args.multifasta)
   builder.create_vcf_from_sequences()
+  if args.vcf_output_file:
+    builder.write_vcf_file(args.vcf_output_file)
   builder.create_features()
 
   output_csv = csv.writer(output_file)
