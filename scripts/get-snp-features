@@ -19,8 +19,10 @@ logger = logging.getLogger(__name__)
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
   parser.description = "Takes an aligned multifasta, outputs features based on SNPs"
-  parser.add_argument('multifasta', type=FileType(mode='r'),
-                      help="Multifasta with aligned sequences")
+  parser.add_argument('input_file', type=FileType(mode='r'),
+                      help="Aligned multifasta or VCF (assumes fasta by default)")
+  parser.add_argument('--input_format', '-f', choices=['fasta', 'vcf'],
+                      default='fasta', help="input_file format")
   parser.add_argument('--vcf-output', dest='vcf_output_file',
                       type=FileType(mode='w'),
                       help="File to output the VCF used when creating features")
@@ -37,9 +39,12 @@ if __name__ == '__main__':
     output_file = open(args.output_file, 'w')
 
   builder = SNPFeatureBuilder()
-  builder.snp_sites_exec = args.snp_sites_exec
-  builder.load_fasta_sequences(args.multifasta)
-  builder.create_vcf_from_sequences()
+  if args.input_format == 'fasta':
+    builder.snp_sites_exec = args.snp_sites_exec
+    builder.load_fasta_sequences(args.input_file)
+    builder.create_vcf_from_sequences()
+  elif args.input_format == 'vcf':
+    builder.vcf_input_file = args.input_file
   if args.vcf_output_file:
     builder.write_vcf_file(args.vcf_output_file)
   builder.create_features()
