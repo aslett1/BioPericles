@@ -71,8 +71,9 @@ def get_matching_CDS(record, feature_index,
   return [feature for feature in features if feature.get_type() == 'CDS']
 
 def add_consequences_to_record(record, consequences):
-  consequences_string = ','.join((consequence.format() for consequence in consequences))
-  record.add_info('CSQ_like', consequences_string)
+  if consequences:
+    consequences_string = ','.join((consequence.format() for consequence in consequences))
+    record.add_info('CSQ_like', consequences_string)
 
 def get_strand_from_feature(feature):
   strand = feature.get_strand()
