@@ -33,18 +33,28 @@ class SNPSitesReader(Reader):
   is a SNP.  PyVCF doesn't like this format so we monkey patch the file reader
   to ammend the relevant lines before PyVCF has a chance to parse them."""
   def _amend_line(self, line):
-    """Fix the format for this line
+    """Replace 'AB' info with 'GT' format
 
-    If the FORMAT is '.' and the INFO is 'AB' change the FORMAT to also be
-    'AB'"""
+    If the FORMAT is '.' and the INFO is 'AB' change the FORMAT to be 'GT'
+    otherwise don't change the line"""
     row = re.split(self._separator, line)
+    ref = row[3]
+    alt = row[4]
     fmt = row[8]
     info = row[7]
+    gt_lookup = {base: str(index+1) for index,base in enumerate(alt.split(','))}
+    gt_lookup['.'] = '0'
     if fmt == '.' and info == 'AB':
-      row[8] = 'AB' # Set the format of this line to Alternative Base (AB)
+      row[7] = '.'
+      row[8] = 'GT' # Set the format of this line to Genotype (GT)
+      self._amend_genotype_fields(row, gt_lookup)
       return "\t".join(row)
     else:
       return line
+
+  def _amend_genotype_fields(self, row, gt_lookup):
+    new_fields = map(lambda field: gt_lookup.get(field, '.'), row[9:])
+    row[9:] = new_fields
 
   def next(self):
     """Wraps PyVCF Reader's next method to ammend the relevant lines"""

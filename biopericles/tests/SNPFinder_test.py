@@ -45,22 +45,22 @@ class TestSNPSitesReader(unittest.TestCase):
     reader = SNPSitesReader()
     reader._separator="\t| +"
 
-    line = "0\t1\t2\t3\t4\t5\t6\tAB\t.\t9\t10"
-    expected = "0\t1\t2\t3\t4\t5\t6\tAB\tAB\t9\t10"
+    line = "0\t1\t2\tC\tT,G\t5\t6\tAB\t.\tG\t.\tT"
+    expected = "0\t1\t2\tC\tT,G\t5\t6\t.\tGT\t2\t0\t1"
     self.assertEqual(reader._amend_line(line), expected)
 
     # It would be elegant if it maintained the separator but this is unlikely to
     # case big issues, hopefully
-    line = "0 1 2 3 4 5 6 AB . 9 10"
-    expected = "0\t1\t2\t3\t4\t5\t6\tAB\tAB\t9\t10"
+    line = "0 1 2 C T,G 5 6 AB . G . T"
+    expected = "0\t1\t2\tC\tT,G\t5\t6\t.\tGT\t2\t0\t1"
     self.assertEqual(reader._amend_line(line), expected)
 
-    line = "0  1 2    3 4\t5\t6 AB . 9 10"
-    expected = "0\t1\t2\t3\t4\t5\t6\tAB\tAB\t9\t10"
+    line = "0  1 2    C T,G\t5\t6 AB . G . T"
+    expected = "0\t1\t2\tC\tT,G\t5\t6\t.\tGT\t2\t0\t1"
     self.assertEqual(reader._amend_line(line), expected)
 
-    line = "0\t1\t2\t3\t4\t5\t6\tAB\tGT\t9\t10"
-    expected = "0\t1\t2\t3\t4\t5\t6\tAB\tGT\t9\t10"
+    line = "0\t1\t2\tC\tT,G\t5\t6\tAB\tGT\t2\t0\t1"
+    expected = "0\t1\t2\tC\tT,G\t5\t6\tAB\tGT\t2\t0\t1"
     self.assertEqual(reader._amend_line(line), expected)
     SNPSitesReader.__bases__ = snp_sites_old_bases
 
@@ -73,7 +73,7 @@ class TestSNPSitesReader(unittest.TestCase):
 
     samples = record.samples
     samples_with_alternative_bases = [sample.sample for sample in samples if
-                                      sample.data.AB]
+                                      sample.data.GT != '0']
 
     expected = ['3002_8_1', '3002_8_2', '3002_8_6', '4056_2_10', '4056_2_4',
                 '4056_8_6', '5174_5_1', '5174_5_7', '5174_5_9', '5174_6_10',
