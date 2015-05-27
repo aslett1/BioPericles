@@ -36,7 +36,7 @@ class FakeCall(object):
 class FakeDatum(object):
   """The calls have values, in this case we're only mocking the AB value"""
   def __init__(self, datum):
-    self.AB = datum
+    self.GT = datum
 
 class TestSNPSitesReader(unittest.TestCase):
   def test_ammend_line(self):
@@ -65,7 +65,28 @@ class TestSNPSitesReader(unittest.TestCase):
     SNPSitesReader.__bases__ = snp_sites_old_bases
 
   def test_next(self):
+    """Parse a file with Alternate Base info
+    
+    File was cerated using snp-sites"""
     vcf_filename = os.path.join(test_data(), 'file_with_SNPs.aln.vcf')
+    vcf_file = open(vcf_filename, 'r')
+
+    reader = SNPSitesReader(vcf_file)
+    record = reader.next()
+
+    samples = record.samples
+    samples_with_alternative_bases = [sample.sample for sample in samples if
+                                      sample.data.GT != '0']
+
+    expected = ['3002_8_1', '3002_8_2', '3002_8_6', '4056_2_10', '4056_2_4',
+                '4056_8_6', '5174_5_1', '5174_5_7', '5174_5_9', '5174_6_10',
+                '5174_7_1', '5174_8_5']
+
+    self.assertItemsEqual(samples_with_alternative_bases, expected)
+
+  def test_next_with_GT(self):
+    """Parse a file which already in Genotype format"""
+    vcf_filename = os.path.join(test_data(), 'file_with_SNPs_in_GT_format.aln.vcf')
     vcf_file = open(vcf_filename, 'r')
 
     reader = SNPSitesReader(vcf_file)
@@ -200,9 +221,9 @@ class TestSNPFeatureBuilder(unittest.TestCase):
   def test_create_features(self):
     builder = SNPFeatureBuilder()
     fake_vcf = []
-    fake_vcf.append(FakeRecord(1,1,[None, None, 'A']))
-    fake_vcf.append(FakeRecord(1,2,[None, 'G', 'T']))
-    fake_vcf.append(FakeRecord(1,3,['A', 'C', None]))
+    fake_vcf.append(FakeRecord(1,1,['0', '0', '1']))
+    fake_vcf.append(FakeRecord(1,2,['0', '1', '2']))
+    fake_vcf.append(FakeRecord(1,3,['1', '2', '0']))
     builder._get_records_from_vcf=MagicMock(return_value=fake_vcf)
 
     builder.create_features()
@@ -214,7 +235,7 @@ class TestSNPFeatureBuilder(unittest.TestCase):
     self.assertEqual(builder.features['sample_2'], [1,1,0])
     self.assertEqual(builder.feature_labels, ['SNP:1:1', 'SNP:1:2', 'SNP:1:3'])
 
-    fake_vcf = [FakeRecord(2,1,['T', None])]
+    fake_vcf = [FakeRecord(2,1,['1', '0'])]
     builder._get_records_from_vcf=MagicMock(return_value=fake_vcf)
 
     builder.create_features()
@@ -227,7 +248,7 @@ class TestSNPFeatureBuilder(unittest.TestCase):
   def test_add_record_to_features(self):
     builder = SNPFeatureBuilder()
 
-    record = FakeRecord(1,1,[None, None, 'A'])
+    record = FakeRecord(1,1,['0', '0', '1'])
     builder._add_record_to_features(record)
 
     self.assertItemsEqual(builder.features.keys(), ['sample_0', 'sample_1',
@@ -237,7 +258,7 @@ class TestSNPFeatureBuilder(unittest.TestCase):
     self.assertEqual(builder.features['sample_2'], [1])
     self.assertEqual(builder.feature_labels, ['SNP:1:1'])
 
-    record = FakeRecord(1,2,[None, 'G', 'T'])
+    record = FakeRecord(1,2,['0', '1', '2'])
     builder._add_record_to_features(record)
 
     self.assertItemsEqual(builder.features.keys(), ['sample_0', 'sample_1',
@@ -247,8 +268,8 @@ class TestSNPFeatureBuilder(unittest.TestCase):
     self.assertEqual(builder.features['sample_2'], [1,1])
     self.assertEqual(builder.feature_labels, ['SNP:1:1', 'SNP:1:2'])
 
-    record = FakeRecord(1,3,['A', 'C', None])
-    record.samples[1].data.__delattr__('AB') # One of the samples is missing an 'AB'
+    record = FakeRecord(1,3,['1', '2', '0'])
+    record.samples[1].data.__delattr__('GT') # One of the samples is missing an 'AB'
     builder._add_record_to_features(record)
 
     self.assertItemsEqual(builder.features.keys(), ['sample_0', 'sample_1',
