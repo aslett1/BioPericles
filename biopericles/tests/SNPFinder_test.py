@@ -8,7 +8,8 @@ from contextlib import contextmanager
 from mock import MagicMock, patch
 from StringIO import StringIO
 
-from biopericles.SNPFinder import SNPFeatureBuilder, SNPSitesReader
+from biopericles.SNPFinder import SNPFeatureBuilder, SNPSitesReader, \
+                                  DeletableFile
 from biopericles.Common import context_aware_tempfile, context_aware_tempdir
 
 def test_data():
@@ -171,7 +172,7 @@ class TestSNPFeatureBuilder(unittest.TestCase):
     builder = SNPFeatureBuilder()
     os_mock.remove.side_effect = os.remove
     with context_aware_tempfile('w', delete=False) as temp_vcf_file:
-      builder.vcf_input_file = temp_vcf_file
+      builder.vcf_input_file = DeletableFile(temp_vcf_file)
 
       fasta_filename = os.path.join(test_data(), 'file_with_SNPs.aln')
       fasta_file = open(fasta_filename, 'r')
@@ -180,6 +181,21 @@ class TestSNPFeatureBuilder(unittest.TestCase):
       builder.create_vcf_from_sequences()
 
       os_mock.remove.assert_any_call(temp_vcf_file.name)
+
+  @patch("biopericles.SNPFinder.os")
+  def test_create_vcf_from_sequences_does_not_delete_existing(self, os_mock):
+    builder = SNPFeatureBuilder()
+    os_mock.remove.side_effect = os.remove
+    with context_aware_tempfile('w', delete=False) as temp_vcf_file:
+      builder.vcf_input_file = temp_vcf_file
+
+      fasta_filename = os.path.join(test_data(), 'file_with_SNPs.aln')
+      fasta_file = open(fasta_filename, 'r')
+
+      builder.load_fasta_sequences(fasta_file)
+      builder.create_vcf_from_sequences()
+
+      self.assertFalse(temp_vcf_file.name in os_mock.remove.call_args_list)
 
   @patch("biopericles.SNPFinder.os")
   def test_create_vcf_from_sequences_deletes_when_done(self, os_mock):

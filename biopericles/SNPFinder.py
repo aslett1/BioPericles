@@ -64,11 +64,33 @@ class SNPSitesReader(Reader):
     self.reader = reader
     return record
 
+class DeletableFile(object):
+  def __init__(self, file_handle):
+    """Wraps a file like object to signify that it's deletable
+
+    We don't want to delete the user's files so we wrap ambiguous files in this
+    object to signify that they were locally created and therefore can be
+    removed"""
+    self.file_handle = file_handle
+
+  def remove(self):
+    try:
+      self.file_handle.close()
+      os.remove(self.file_handle.name)
+    except (OSError, AttributeError):
+      # The file didn't exist or had never been created
+      pass
+
+  def __iter__(self):
+    return self.file_handle
+
+  def __getattr__(self, key):
+    return getattr(self.file_handle, key)
+
 class SNPFeatureBuilder(LoadFastaMixin, RunExternalApplicationMixin):
   def __init__(self):
     self.sequences = {}
-    self.vcf_output_file = None
-    self.vcf_input_file = None
+    self.vcf_input_file = DeletableFile(None)
     self.feature_labels = [] # list of feature label objects
     self.features = {} # map of sample names to feature objects
     self.snp_sites_exec = "snp-sites"
@@ -76,18 +98,21 @@ class SNPFeatureBuilder(LoadFastaMixin, RunExternalApplicationMixin):
 
   def __del__(self):
     try:
-      self.vcf_input_file.close()
-      os.remove(self.vcf_input_file.name)
-    except (OSError, AttributeError):
-      # The file didn't exist or had never been created
+      self.vcf_input_file.remove()
+    except AttributeError:
+      # The file might have already been deleted or might not have been created
+      # by us so we shouldn't delete it.
       pass
 
   def create_vcf_from_sequences(self):
     with context_aware_tempfile('w', delete=False) as temp_fasta_file:
-      if self.vcf_input_file != None:
-        self.vcf_input_file.close()
-        os.remove(self.vcf_input_file.name)
-      self.vcf_input_file = tempfile.NamedTemporaryFile('w', delete=False)
+      try:
+        self.vcf_input_file.remove()
+      except AttributeError:
+        # The file might have already been deleted or might not have been created
+        # by us so we shouldn't delete it.
+        pass
+      self.vcf_input_file = DeletableFile(tempfile.NamedTemporaryFile('w', delete=False))
       self.logger.info("Writing sequences to %s" % temp_fasta_file.name)
       self._write_sequences(self.sequences.values(), temp_fasta_file)
       temp_fasta_file.close()
@@ -98,7 +123,7 @@ class SNPFeatureBuilder(LoadFastaMixin, RunExternalApplicationMixin):
         self._run_snp_sites(self.snp_sites_exec, {'-o': self.vcf_input_file.name},
                             temp_fasta_file.name, output_directory)
 
-      self.vcf_input_file = open(self.vcf_input_file.name, 'r')
+      self.vcf_input_file = DeletableFile(open(self.vcf_input_file.name, 'r'))
 
   def create_features(self):
     self.features = {}
