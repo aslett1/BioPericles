@@ -10,6 +10,7 @@ logging.basicConfig(format='%(message)s', level=logging.INFO)
 RAXML_VERSION = "8.1.20"
 FASTML_VERSION = "3.1"
 SNP_SITES_VERSION = "1.5.0"
+GENOMETOOLS_VERSION = "1.5.5"
 
 RAXML_DOWNLOAD_URL = \
     "https://github.com/stamatak/standard-RAxML/archive/v{version}.tar.gz".format(version=RAXML_VERSION)
@@ -17,6 +18,8 @@ FASTML_DOWNLOAD_URL = \
     "http://fastml.tau.ac.il/source/FastML.v{version}.tgz".format(version=FASTML_VERSION)
 SNP_SITES_DOWNLOAD_URL = \
     "https://github.com/sanger-pathogens/snp_sites/archive/{version}.tar.gz".format(version=SNP_SITES_VERSION)
+GENOMETOOLS_DOWNLOAD_URL = \
+    "https://github.com/genometools/genometools/archive/v{version}.tar.gz".format(version=GENOMETOOLS_VERSION)
 
 build_dir = os.path.join(os.getcwd(), "invoke_install_directory")
 
@@ -101,6 +104,8 @@ def delete_install_folder():
   else:
     run("rm -r %s" % build_dir)
 
+ns.add_task(delete_install_folder, 'clean')
+
 @task(pre=[create_install_folder])
 def download_raxml():
   with cd(build_dir):
@@ -128,7 +133,16 @@ def download_snp_sites():
     else:
       download(SNP_SITES_DOWNLOAD_URL, output_file)
 
-@task(pre=[download_raxml, download_fastml, download_snp_sites])
+@task(pre=[create_install_folder])
+def download_genometools():
+  with cd(build_dir):
+    output_file = "genometools-{version}.tgz".format(version=GENOMETOOLS_VERSION)
+    if os.path.isfile(output_file):
+      skip_task("download %s" % output_file)
+    else:
+      download(GENOMETOOLS_DOWNLOAD_URL, output_file)
+
+@task(pre=[download_raxml, download_fastml, download_snp_sites, download_genometools])
 def download_source():
   pass
 
@@ -137,6 +151,7 @@ download_tasks.add_task(download_source, 'all', default=True)
 download_tasks.add_task(download_raxml, 'raxml')
 download_tasks.add_task(download_fastml, 'fastml')
 download_tasks.add_task(download_snp_sites, 'snp_sites')
+download_tasks.add_task(download_genometools, 'genometools')
 ns.add_collection(download_tasks)
 
 @task
@@ -230,12 +245,38 @@ def install_snp_sites():
     say("please run `export LD_LIBRARY_PATH=/usr/local/lib` in your terminal")
 
 @task(pre=[apt_update])
-def install_numpy_dependencies():
-  apt_install('libblas-dev liblapack-dev gfortran')
+def install_genometools_dependencies():
+  pass
 
-@task(pre=[install_raxml, install_fastml, install_snp_sites,
-           install_numpy_dependencies],
-      post=[delete_install_folder])
+@task(pre=[download_genometools])
+def extract_genometools():
+  with cd(build_dir):
+    if os.path.isdir("genometools-%s" % GENOMETOOLS_VERSION):
+      skip_task("extract genometools")
+    else:
+      run("tar xzf genometools-%s.tgz" % GENOMETOOLS_VERSION)
+
+@task(pre=[install_genometools_dependencies, extract_genometools])
+def build_genometools():
+  genometools_directory = os.path.join(build_dir, "genometools-%s" % GENOMETOOLS_VERSION)
+  with cd(genometools_directory):
+    if os.path.isfile(os.path.join("bin", "gt")):
+      skip_task("build genometools")
+    else:
+      run("make cairo=no")
+
+@task(pre=[build_genometools])
+def install_genometools():
+  genometools_directory = os.path.join(build_dir, "genometools-%s" % GENOMETOOLS_VERSION)
+  with cd(genometools_directory):
+    run("sudo make install cairo=no")
+
+@task(pre=[apt_update])
+def install_python_dependencies():
+  apt_install('g++ python-dev libblas-dev liblapack-dev gfortran')
+
+@task(pre=[install_raxml, install_fastml, install_python_dependencies,
+           install_genometools, install_snp_sites])
 def install_all():
   pass
 
@@ -244,4 +285,6 @@ install_tasks.add_task(install_all, 'all', default=True)
 install_tasks.add_task(install_raxml, 'raxml')
 install_tasks.add_task(install_fastml, 'fastml')
 install_tasks.add_task(install_snp_sites, 'snp_sites')
+install_tasks.add_task(install_genometools, 'genometools')
+install_tasks.add_task(install_python_dependencies, 'python_dependencies')
 ns.add_collection(install_tasks)
