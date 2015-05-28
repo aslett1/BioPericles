@@ -32,8 +32,8 @@ if __name__ == '__main__':
                       type=int, default=1,
                       help="Metadata column for sequence name (default: 1)")
   cluster_arg = parser.add_argument('--cluster-column', '-c', dest="cluster_idx",
-                      type=int, default=3,
-                      help="Metadata column for cluster name (default: 3)")
+                      type=int, default=2,
+                      help="Metadata column for cluster name (default: 2)")
   parser.add_argument('classifier_output', type=FileType(mode='wb'),
                       help="Path to classifier output file")
   parser.epilog = "NB column numbering starts from 1"
