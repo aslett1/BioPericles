@@ -137,6 +137,19 @@ but provides less detail.
 
 Requires: `GenomeTools <http://genometools.org/>`_
 
+**invoke**
+
+Installing the dependencies for BioPericles can be a bit of a pain.  An invoke script is
+included in the prototypes directory to help install dependencies in a clean system on which
+you have root access.  It has only been tested in an Ubuntu Docker container.
+
+::
+
+  cd BioPericles/prototype
+  sudo pip install -r invoke_requirements.txt
+  invoke install
+  sudo pip install -r ../requirements.txt
+
 TODO
 ----
 
