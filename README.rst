@@ -1,6 +1,9 @@
 BioPericles
 ===========
 
+.. image:: https://travis-ci.org/bewt85/BioPericles.svg?branch=master
+    :target: https://travis-ci.org/bewt85/BioPericles
+
 A work in progress. BioPericles is designed to use supervised Machine Learning
 techniques to classify samples into clusters.  It currently extracts features 
 using SNP analysis although other features could be used.
