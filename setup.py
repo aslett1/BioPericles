@@ -17,7 +17,7 @@ setup(name='biopericles',
                'scripts/cluster-sequences',
                'scripts/get-cluster-consensus',
                'scripts/get-snp-features',
-               'scripts/train-classifier']
+               'scripts/train-classifier'],
       include_package_data=True,
       install_requires=[
         'biopython',
