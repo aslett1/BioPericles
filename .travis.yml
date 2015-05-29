@@ -1,15 +1,30 @@
 language: python
+addons:
+  apt:
+    packages:
+    - g++
+    - zlib1g-dev
+    - check
+    - autoconf
+    - libtool
+    - git
+    - python-dev
+    - libblas-dev
+    - liblapack-dev
+    - gfortran
+cache:
+  directories:
+  - "prototype/build"
+  - "$HOME/.cache/pip"
 python:
- - "2.7"
-sudo: required
+  - "2.7"
+sudo: false
 before_install:
   - "pip install --upgrade pip"
   - "pip --version"
 install:
   - "cd prototype"
-  - "sudo pip install -r invoke_requirements.txt"
-  - "sudo invoke install"
-  - "export LD_LIBRARY_PATH=/usr/local/lib"
+  - "source ./install_dependencies.sh"
   - "cd .."
   - "travis_wait pip install -r requirements.txt"
   - "python setup.py develop"
