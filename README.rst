@@ -140,17 +140,18 @@ but provides less detail.
 
 Requires: `GenomeTools <http://genometools.org/>`_
 
-**invoke**
+**install_dependencies.sh**
 
-Installing the dependencies for BioPericles can be a bit of a pain.  An invoke script is
-included in the prototypes directory to help install dependencies in a clean system on which
-you have root access.  It has only been tested in an Ubuntu Docker container.
+Installing the dependencies for BioPericles can be a bit of a pain.  A script is
+included in the prototypes directory to help install dependencies in a clean system
+on which you have root access.  NB This script manipulates your PATH and 
+LD_LIBRARY_PATH environment variables.  It has only been tested in an Ubuntu
+Docker Container.
 
 ::
 
   cd BioPericles/prototype
-  sudo pip install -r invoke_requirements.txt
-  invoke install
+  sudo ./install_dependencies.sh
   sudo pip install -r ../requirements.txt
 
 TODO
@@ -161,4 +162,3 @@ TODO
 - Use the classifier to identify a subset of features which are the most discriminative
 - Consider how the classifier could be tuned (either manually or automatically)
 - Make it easier to score the classifier using a separate test set
-- Add Continuous Integration (`travis <https://travis-ci.org/>`_?)
