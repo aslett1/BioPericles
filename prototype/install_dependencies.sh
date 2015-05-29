@@ -95,6 +95,9 @@ else
   ./configure
   make
 fi
+if [ ! -e "${snp_sites_dir}/src/.libs/snp_sites" ]; then
+  ln -s ${snp_sites_dir}/src/.libs/snp-sites ${snp_sites_dir}/src/.libs/snp_sites
+fi
 
 cd $build_dir
 
@@ -122,7 +125,6 @@ update_path () {
 
 update_path ${raxml_dir}
 update_path ${fastml_dir}/programs/fastml
-ln -s ${snp_sites_dir}/src/.libs/snp-sites ${snp_sites_dir}/src/.libs/snp_sites
 export LD_LIBRARY_PATH=${snp_sites_dir}/src/.libs
 update_path ${snp_sites_dir}/src/.libs
 update_path ${genometools_dir}/bin
