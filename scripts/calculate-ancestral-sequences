@@ -1,0 +1,68 @@
+#!/usr/bin/env python
+
+import argparse
+import logging
+import os
+import sys
+
+from argparse import FileType
+
+from biopericles.TreeBuilder import TreeBuilder
+
+def stderr(text):
+  print >> sys.stderr, text
+
+def default_file(filename):
+  filepath = os.path.join(os.getcwd(), filename)
+  if os.path.isfile(filepath):
+    raise ValueError("Was going to write to '%s' but the file already exists" %
+                     filepath)
+  else:
+    return open(filepath, 'w')
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__) 
+
+if __name__ == '__main__':
+  parser = argparse.ArgumentParser()
+  parser.description = "Takes a fasta, outputs a newick tree and fasta with ancestor sequences"
+  parser.add_argument('multifasta', type=FileType(mode='r'),
+                      help="Multifasta with aligned sequences")
+  parser.add_argument('--raxml', '-r', type=str, default='raxmlHPC',
+                      help="Path to raxml executable (defaults to raxmlHPC)")
+  parser.add_argument('--fastml', '-f', type=str, default='fastml',
+                      help="Path to fastml executable (defaults to fastml)")
+  parser.add_argument('--sequences-output', '-s', type=FileType(mode='w'),
+                      nargs='?',
+                      help="Output file for sequence data (defaults to ancestor_sequences.mfa)")
+  parser.add_argument('--tree-output', '-t', type=FileType(mode='w'),
+                      nargs='?',
+                      help="Output file for tree data (defaults to ancestor_tree.newick)")
+
+  args = parser.parse_args()
+  if not args.sequences_output:
+    sequences_output = default_file('ancestor_sequences.mfa')
+  else:
+    sequences_output = args.sequences_output
+
+  if not args.tree_output:
+    tree_output = default_file('ancestor_tree.newick')
+  else:
+    tree_output = args.tree_output
+
+  builder = TreeBuilder()
+  builder.sequences_output_file = sequences_output
+  builder.tree_output_file = tree_output
+  logger.info("Using %s and %s to build the ancestral nodes" % (args.raxml,
+                                                                args.fastml))
+  builder.raxml_executable = args.raxml
+  builder.fastml_executable = args.fastml
+
+  builder.load_fasta_sequences(args.multifasta)
+  logger.info("Building a tree from %s" % args.multifasta.name)
+  builder.build_tree()
+  logger.info("Adding ancestral nodes")
+  builder.add_hereditary_nodes()
+  logger.info("Writing output to %s and %s" % (sequences_output.name,
+                                               tree_output.name))
+  builder.write_output()

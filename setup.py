@@ -7,15 +7,25 @@ def readme():
     return f.read()
 
 setup(name='biopericles',
-      version='0.0.1',
-      description='TBC',
+      version='0.1.0',
+      description='Extracts features from genome sequences and classifies them into specified groupings',
       long_description=readme(),
       url='https://github.com/sanger-pathogens/BioPericles',
       author='Ben Taylor, Andrew J. Page',
       author_email='ben.taylor@sanger.ac.uk, ap13@sanger.ac.uk',
-      scripts=[],
+      scripts=['scripts/calculate-ancestral-sequences',
+               'scripts/cluster-sequences',
+               'scripts/get-cluster-consensus',
+               'scripts/get-snp-features',
+               'scripts/train-classifier'],
       include_package_data=True,
       install_requires=[
+        'biopython',
+        'mock',
+        'numpy',
+        'PyVCF',
+        'scikit-learn',
+        'scipy'
       ],
       test_suite='nose.collector',
       tests_require=[
