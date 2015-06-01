@@ -1,8 +1,8 @@
 BioPericles
 ===========
 
-.. image:: https://travis-ci.org/bewt85/BioPericles.svg?branch=master
-    :target: https://travis-ci.org/bewt85/BioPericles
+.. image:: https://travis-ci.org/sanger-pathogens/BioPericles.svg
+    :target: https://travis-ci.org/sanger-pathogens/BioPericles
 
 A work in progress. BioPericles is designed to use supervised Machine Learning
 techniques to classify samples into clusters.  It currently extracts features 
