@@ -5,8 +5,7 @@ can install all of the dependencies using:
 
 ```
 cd BioPericles/prototype
-sudo pip install -r invoke_requirements.txt
-invoke install
+sudo ./install_dependencies.sh
 cd ..
 pip install -r requirements.txt
 python setup.py develop
