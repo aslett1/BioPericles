@@ -148,6 +148,12 @@ on which you have root access.  NB This script manipulates your PATH and
 LD_LIBRARY_PATH environment variables.  It has only been tested in an Ubuntu
 Docker Container.
 
+`install_dependencies.sh <prototype/install_dependencies.sh>`_ works a bit like a
+Makefile.  As long as you run it from the same location it will not re-download or
+build the dependencies and will just re-update your environment variables if required.
+This is useful for Travis CI because it allows us to cache the build folder to speed up
+subsequent test runs.
+
 ::
 
   cd BioPericles/prototype
