@@ -1,8 +1,8 @@
 BioPericles
 ===========
 
-.. image:: https://travis-ci.org/bewt85/BioPericles.svg?branch=master
-    :target: https://travis-ci.org/bewt85/BioPericles
+.. image:: https://travis-ci.org/sanger-pathogens/BioPericles.svg
+    :target: https://travis-ci.org/sanger-pathogens/BioPericles
 
 A work in progress. BioPericles is designed to use supervised Machine Learning
 techniques to classify samples into clusters.  It currently extracts features 
@@ -147,6 +147,12 @@ included in the prototypes directory to help install dependencies in a clean sys
 on which you have root access.  NB This script manipulates your PATH and 
 LD_LIBRARY_PATH environment variables.  It has only been tested in an Ubuntu
 Docker Container.
+
+`install_dependencies.sh <prototype/install_dependencies.sh>`_ works a bit like a
+Makefile.  As long as you run it from the same location it will not re-download or
+build the dependencies and will just re-update your environment variables if required.
+This is useful for Travis CI because it allows us to cache the build folder to speed up
+subsequent test runs.
 
 ::
 
