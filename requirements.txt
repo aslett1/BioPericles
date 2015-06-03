@@ -1,0 +1,7 @@
+biopython
+mock
+numpy
+git+https://github.com/jamescasbon/PyVCF.git@ec193b12b9443dc40b0ea49cde134fe60915b60f#egg=PyVCF-0.6.7
+-e 'git+https://github.com/genometools/genometools.git@v1.5.2#subdirectory=gtpython&egg=GenomeTools-1.5.2'
+scikit-learn
+scipy
